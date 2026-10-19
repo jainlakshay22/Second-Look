@@ -20,7 +20,9 @@ async function generateGeminiText(prompt, {maxOutputTokens = 4096, connectionTes
   // A connectivity check doesn't need the reviewer's normal reasoning effort.
   // thinkingLevel isn't supported by Gemini 2.x; don't send it to those models.
   if (connectionTest && /^gemini-[34][.-]/.test(model)) {
-    generationConfig.thinkingConfig = {thinkingLevel: "LOW"};
+    generationConfig.thinkingConfig = {
+      thinkingLevel: model === "gemini-3.5-flash-lite" ? "MINIMAL" : "LOW",
+    };
   }
   try {
     const response = await fetch(

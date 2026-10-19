@@ -46,7 +46,7 @@ The goal is not to compare answers side by side. The goal is to answer: **"I alr
 - `chrome.storage.local` for settings
 - `chrome.runtime` messaging between content script and service worker
 - Chrome **Side Panel API** for the UI
-- Reviewer model accessed through the Gemini API with the user's own key. Default: `gemini-3.8-flash`; model name is configurable. One-time key creation happens in Google AI Studio; reviews happen inside the extension.
+- Reviewer model accessed through the Gemini API with the user's own key. Default: `gemini-3.5-flash-lite`; model name is configurable. One-time key creation happens in Google AI Studio; reviews happen inside the extension.
 
 ## 6. File structure
 

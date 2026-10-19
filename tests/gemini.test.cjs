@@ -42,12 +42,13 @@ function fixture({model = 'gemini-3.8-flash', behavior = 'success'} = {}) {
 }
 
 test('connection test lowers thinking only for supported models and keeps credentials out of the URL/body', async () => {
-  for (const model of ['gemini-3.8-flash', 'gemini-4-argon', 'gemini-2.5-flash']) {
+  for (const model of ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-4-argon', 'gemini-2.5-flash']) {
     const f = fixture({model});
     assert.equal(await f.run('generateGeminiText("Reply with exactly OK.", {maxOutputTokens:1024, connectionTest:true})'), 'OK');
     const {url, options} = f.requests[0];
     const body = JSON.parse(options.body);
-    assert.deepEqual(body.generationConfig.thinkingConfig, model.startsWith('gemini-2.') ? undefined : {thinkingLevel: 'LOW'});
+    assert.deepEqual(body.generationConfig.thinkingConfig, model.startsWith('gemini-2.') ? undefined
+      : {thinkingLevel: model === 'gemini-3.5-flash-lite' ? 'MINIMAL' : 'LOW'});
     assert.equal(body.generationConfig.maxOutputTokens, 1024);
     assert.equal(options.headers['x-goog-api-key'], 'fake-test-credential');
     assert.equal(options.credentials, 'omit');

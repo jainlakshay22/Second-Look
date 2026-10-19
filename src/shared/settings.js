@@ -1,5 +1,5 @@
 // Trusted extension pages and the worker share validation; no secrets live here.
-const SETTINGS_DEFAULTS = Object.freeze({provider: "google", model: "gemini-3.8-flash", historyCount: 4});
+const SETTINGS_DEFAULTS = Object.freeze({provider: "google", model: "gemini-3.5-flash-lite", historyCount: 4});
 const SETTINGS_PROVIDERS = Object.freeze(["google"]);
 
 function isValidGeminiModel(value) {
