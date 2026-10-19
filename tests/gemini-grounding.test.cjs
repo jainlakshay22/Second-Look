@@ -13,7 +13,7 @@ const review = (sources = [source], verdict = 'supported') => ({claims:[{
 const event = candidate => ({candidates:[candidate]});
 const metadata = urls => ({groundingChunks:urls.map(uri => ({web:{uri,title:'Source'}}))});
 
-function fixture({enabled=true, model='gemini-3.5-flash-lite', value=review(), events, partial=false, status=200}={}) {
+function fixture({enabled=true, model='gemini-3.5-flash-lite', value=review(), events, partial=false, status=200, errorBody, checkRequestFormat=false}={}) {
   const requests=[], timers=new Set();
   const ctx=vm.createContext({AbortController,TextDecoder,URL,
     chrome:{storage:{local:{get:async defaults=>({...defaults, provider:'google',model,apiKey:'fake-test-key',groundingEnabled:enabled})}}},
@@ -21,11 +21,22 @@ function fixture({enabled=true, model='gemini-3.5-flash-lite', value=review(), e
     clearTimeout(t) {timers.delete(t);clearTimeout(t);},
     async fetch(url,options) {
       requests.push({url,options,body:JSON.parse(options.body)});
+      if (checkRequestFormat) {
+        const config = JSON.parse(options.body).generationConfig;
+        const allowed = new Set(['type','enum','required','additionalProperties','properties','items','minItems','maxItems','description','title','format']);
+        const compatible = schema => schema && Object.keys(schema).every(key => allowed.has(key))
+          && (!schema.items || compatible(schema.items))
+          && (!schema.properties || Object.values(schema.properties).every(compatible));
+        if (config.responseMimeType || config.responseJsonSchema || config.responseFormat?.text?.mimeType !== 'APPLICATION_JSON'
+            || !compatible(config.responseFormat.text.schema)) {
+          return {ok:false,status:400,json:async()=>({error:{message:'Unsupported response schema constraint'}})};
+        }
+      }
       const streamEvents=events || [event({content:{parts:[{text:JSON.stringify(value)}]},finishReason:'STOP',groundingMetadata:metadata([source])})];
       const bytes=new TextEncoder().encode(streamEvents.map(e=>'data: '+JSON.stringify(e)+'\r\n\r\n').join(''));
       let cursor=0;
       return {ok:status===200,status,
-        json:async()=>({candidates:[{finishReason:'STOP',content:{parts:[{text:'OK'}]}}]}),
+        json:async()=>errorBody || ({candidates:[{finishReason:'STOP',content:{parts:[{text:'OK'}]}}]}),
         body:new ReadableStream({pull(controller) {
           if(cursor===bytes.length){controller.close();return;}
           const end=partial?cursor+1:bytes.length;
@@ -43,8 +54,8 @@ const plain = value => JSON.parse(JSON.stringify(value));
 test('verify claims enables the documented REST tool and keeps the strict schema and sources',async()=>{
   const f=fixture();const result=await f.run();
   assert.deepEqual(f.requests[0].body.tools,[{google_search:{}}]);
-  assert.equal(f.requests[0].body.generationConfig.responseMimeType,'application/json');
-  assert.deepEqual(f.requests[0].body.generationConfig.responseJsonSchema.required,['claims','summary']);
+  assert.equal(f.requests[0].body.generationConfig.responseFormat.text.mimeType,'APPLICATION_JSON');
+  assert.deepEqual(f.requests[0].body.generationConfig.responseFormat.text.schema.required,['claims','summary']);
   assert.match(f.requests[0].body.contents[0].parts[0].text,/Use Google Search/);
   assert.deepEqual(plain(result.review),review());
   assert.deepEqual(plain(result.grounding.sources),[source]);
@@ -149,4 +160,44 @@ test('unknown mode is rejected without fetching',async()=>{
   const f=fixture();
   await assert.rejects(f.run('generateGeminiResponse("test",{mode:"typo"})'),/Unknown review mode/);
   assert.equal(f.requests.length,0);
+});
+
+
+test('verification sends the current REST format and a small supported schema with Search on or off',async()=>{
+  for(const enabled of [true,false]) {
+    const f=fixture({enabled,checkRequestFormat:true});
+    const result=await f.run();
+    assert.equal(result.review.claims[0].quote,answer);
+    assert.equal(f.requests.length,1);
+    const schema=f.requests[0].body.generationConfig.responseFormat.text.schema;
+    assert.deepEqual(schema.properties.claims.items.properties.verdict.enum,['supported','contradicted','unverified']);
+    assert.deepEqual(schema.properties.claims.items.required,['id','quote','verdict','explanation','sources']);
+    assert.equal(schema.additionalProperties,false);
+  }
+});
+
+for(const [message,details,expected] of [
+  ['API key not valid.',[{reason:'API_KEY_INVALID'}],/API key/],
+  ['Billing must be enabled.',[],/billing/],
+  ['Too many states in response schema constraints.',[],/structured response format/],
+  ['Response mime type application/json is not supported with google_search.',[],/structured response format/],
+  ['Google Search tool is not supported.',[],/Search grounding/],
+  ['Invalid thinking configuration.',[],/thinking configuration/],
+  ['Unknown invalid argument.',[],/claim-verification request/],
+]) test('HTTP 400 reports a safe diagnosis: '+expected,async()=>{
+  const f=fixture({status:400,errorBody:{error:{message:message+' PRIVATE_PROMPT fake-test-key',details}}});
+  await assert.rejects(f.run(),error=>{
+    assert.match(error.message,expected);
+    assert.doesNotMatch(error.message,/PRIVATE_PROMPT|fake-test-key/);
+    return true;
+  });
+  assert.equal(f.requests.length,1);assert.equal(f.timers.size,0);
+});
+
+test('simpler provider schema does not loosen local claim validation',async()=>{
+  for(const value of [
+    {...review(),claims:[{...review().claims[0],quote:'not an exact quote'}]},
+    {...review(),claims:[{...review().claims[0],explanation:'x'.repeat(4001)}]},
+    {...review(),claims:[{...review().claims[0],sources:[source,source]}]},
+  ]) await assert.rejects(fixture({value,checkRequestFormat:true}).run(),/invalid review/);
 });

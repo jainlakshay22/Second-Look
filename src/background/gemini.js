@@ -35,8 +35,16 @@ async function generateGeminiResponse(prompt, {maxOutputTokens = 4096, connectio
   let receivedHeaders = false;
   const generationConfig = {maxOutputTokens};
   if (schema) {
-    generationConfig.responseMimeType = 'application/json';
-    generationConfig.responseJsonSchema = schema;
+    if (mode === 'verify_claims' && !connectionTest) {
+      // Current REST output format. Local validation keeps length/URL/uniqueness
+      // constraints locally instead of adding complexity to the provider grammar.
+      generationConfig.responseFormat = {text: {
+        mimeType: 'APPLICATION_JSON', schema: geminiClaimSchema(schema),
+      }};
+    } else {
+      generationConfig.responseMimeType = 'application/json';
+      generationConfig.responseJsonSchema = schema;
+    }
   }
   // Keep the default Flash-Lite reviewer responsive; other review models keep their defaults.
   // thinkingLevel isn't supported by Gemini 2.x; don't send it to those models.
@@ -69,8 +77,12 @@ async function generateGeminiResponse(prompt, {maxOutputTokens = 4096, connectio
       timeout = setTimeout(() => controller.abort(), 90000);
     }
     if (!response.ok) {
+      if (response.status === 400) {
+        let data;
+        try { data = await response.json(); } catch { /* Never expose a raw error body. */ }
+        throw new GeminiError(geminiBadRequestMessage(data, mode));
+      }
       const messages = {
-        400: "Google rejected the request. Check your Gemini key and model ID.",
         401: "Google rejected this API key. Replace it in Settings.",
         403: "This key cannot access Gemini. Check its permissions and API access in Google AI Studio.",
         404: "This Gemini model is unavailable. Check the model ID in Settings.",
@@ -241,4 +253,48 @@ async function generateGeminiReview(context, selected, {mode = 'review', groundi
     }
   }
   return {review, grounding: result.grounding};
+}
+
+
+// Only Gemini's documented JSON Schema subset goes over the wire. In particular,
+// don't send minLength/maxLength, pattern, or uniqueItems. parseReview remains the
+// authority for exact quotes, limits, safe URLs and distinct IDs; grounding checks
+// still enforce source provenance after parsing.
+// https://ai.google.dev/gemini-api/docs/generate-content/structured-output
+function geminiClaimSchema(schema) {
+  const result = {};
+  for (const key of ['type','enum','required','additionalProperties']) {
+    if (Object.hasOwn(schema,key)) result[key] = schema[key];
+  }
+  if (schema.properties) result.properties = Object.fromEntries(
+    Object.entries(schema.properties).map(([key,value]) => [key,geminiClaimSchema(value)])
+  );
+  if (schema.items) result.items = geminiClaimSchema(schema.items);
+  return result;
+}
+
+function geminiBadRequestMessage(data, mode) {
+  // Classify privately into fixed messages: Google can echo inputs or credentials
+  // in its error message/details. Never return or log those values.
+  const error = data?.error;
+  const message = typeof error?.message === 'string' ? error.message.toLowerCase() : '';
+  const reasons = Array.isArray(error?.details) ? error.details.map(item => item?.reason) : [];
+  if (reasons.includes('API_KEY_INVALID') || /api.?key.*(invalid|expired)|api key not valid/.test(message)) {
+    return 'Google rejected this API key. Replace it in Settings.';
+  }
+  if (reasons.includes('BILLING_DISABLED') || /billing.*(enable|required)|free tier.*(unavailable|not available)/.test(message)) {
+    return 'Google requires billing for this request. Check the API project in Google AI Studio.';
+  }
+  if (/schema|response.?format|response.?mime.?type|constraint/.test(message)) {
+    return 'Google rejected the structured response format for this model. Reload the extension to use the updated format. If it persists, choose a model that supports structured output with Google Search, or turn off Search grounding in Settings.';
+  }
+  if (/google.?search|grounding|tools?/.test(message)) {
+    return 'This Gemini model rejected Google Search grounding. Choose a model that supports Search grounding, or turn it off in Settings.';
+  }
+  if (/thinking/.test(message)) {
+    return 'Google rejected this model’s thinking configuration. Choose another Gemini model in Settings.';
+  }
+  return mode === 'verify_claims'
+    ? 'Google rejected the claim-verification request (HTTP 400). Reload the extension to use the updated request format; if it persists, check the model and Search grounding setting.'
+    : 'Google rejected the request (HTTP 400). Check your Gemini model and API settings.';
 }

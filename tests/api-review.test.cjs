@@ -226,7 +226,7 @@ test('Verify selector persists mode, SEND_REVIEW streams grounded claims, and th
   const body=JSON.parse(f.requests[0].options.body);
   assert.deepEqual(body.tools,[{google_search:{}}]);
   assert.equal(body.contents[0].parts[0].text,preview);
-  assert.deepEqual(body.generationConfig.responseJsonSchema.required,['claims','summary']);
+  assert.deepEqual(body.generationConfig.responseFormat.text.schema.required,['claims','summary']);
   f.requests[0].finish(JSON.stringify(claimReview),200,groundMetadata);
   await tick();await tick();await f.send({type:'GET_REVIEW'});await tick();
   assert.equal(f.session.review.phase,'done');assert.equal(f.session.review.mode,'verify_claims');
