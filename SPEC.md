@@ -1,48 +1,37 @@
 # Second Look: Spec
 
-A second-opinion button for ChatGPT answers, using the user's Gemini website account.
-
-## Current product direction
-
-The user approved browser automation instead of API credentials. Install → sign in normally on Gemini → click Cross-check → preview → Send → review appears in Second Look. There are no backend accounts, API keys, or API calls in the active implementation. This supersedes the earlier API build plan.
+A second-opinion button for ChatGPT answers, using the Gemini API and a locally saved API key. The user reverted the browser-login experiment to API-only operation. This replaces the browser-account setup and automation plan.
 
 ## User flow
 
-1. Setup opens a Gemini tab. The user signs in on Google's page and chooses their account.
-2. Check connection confirms a signed-in Gemini composer is available and remembers the account-specific app URL when present.
-3. ChatGPT replies have one Cross-check button, including dynamically loaded replies.
-4. Cross-check opens the side panel and captures the question, reply, and up to N prior messages (default 4).
-5. Local word overlap and follow-up hints suggest earlier context. The user can deselect or add captured messages and inspect the exact generated prompt.
-6. Only Send creates a fresh Gemini chat and submits the confirmed prompt once. Never reuse an existing conversation or overwrite a draft.
-7. The panel displays progress and the structured review. Keep Gemini's review tab open. Sign-in or setup requires user attention and Continue.
-8. Fail clearly on changed markup, closed tabs, interrupted sessions, long prompts, or timeout. Never automatically resubmit an uncertain request.
+1. Setup accepts a Gemini API key, model, and history count. Save locally; optionally test with a small synthetic prompt.
+2. ChatGPT replies have one Cross-check button, including dynamically loaded replies.
+3. Cross-check opens the side panel and captures the question, reply, and up to N prior messages (default 4).
+4. Local word overlap and follow-up hints suggest context. Users can adjust the selection and inspect the exact prompt.
+5. Only Send submits the confirmed prompt once to Google's API from the trusted side panel, after worker authorization.
+6. The panel displays progress, then verdict, summary, issues, missing points, and strengths. No Gemini tabs or website login.
+7. Cancel clears the preview or aborts an in-flight request. Already submitted requests may still be processed/billed. Never automatically retry.
 
 ## Architecture
 
-- Manifest V3; plain JavaScript; no build step.
-- All DOM query selectors live in root `selectors.js`.
-- ChatGPT content script extracts local text. Gemini content script operates only visible website controls.
-- The worker validates sender origins, trusted extension pages, request IDs, and dedicated tab IDs.
-- Only trusted side-panel Send confirms submission. A content script cannot authorize itself to send.
-- Conversation context and reviews use trusted-only `chrome.storage.session`. Preferences use local storage.
-- Never read or log passwords, cookies, OAuth tokens, API keys, or conversations unrelated to the requested review.
-- Old prototype API keys are unused and removable in Settings. No API host permission remains.
-- Render all returned material with textContent; no HTML interpretation.
-- Persist submission state before messaging Gemini. Prevent duplicate requests and reject stale results.
-- Gemini supplies the signed-in account, model, personalization, and limits. This is not an official Google OAuth integration.
+- Manifest V3, plain JavaScript, no build step. All DOM query selectors in root `selectors.js`.
+- Only ChatGPT has a content script. Host access for API requests is restricted to `https://generativelanguage.googleapis.com/*`.
+- The worker validates sender origins, trusted extension pages, and review IDs. A content script cannot authorize an API call or obtain the key.
+- API key/model/settings use trusted-only local storage. Context/results use trusted-only session storage. Never log or commit credentials, and never put keys in URLs.
+- One local installation uses its saved key. A centrally funded public distribution would require a backend proxy; not part of this step.
+- Persist state before API submission, reject duplicate Send, abort on cancellation, and ignore stale results. Never replay authorized prompts after worker or panel restart.
+- Network calls must not block cancellation/panel polling. Connection tests run in the worker with a 25-second limit. Reviews run in the trusted panel with a 90-second header limit and 90-second stream limit. Closing the panel cancels the local request. Persist authorization in the worker, reject late results, and expire abandoned waiting state.
+- Show safe, actionable errors for credentials, quota, unavailable models, network failures, timeouts, blocked and incomplete responses. Do not display provider payloads that could contain sensitive details.
+- Render results with textContent. Validate structured output; malformed results fall back to plain text.
 
 ## Context and output
 
-Capture object: `{question, reply, history:[{role,text}], source:"chatgpt.com", capturedAt}`. History excludes the selected question/reply, stays oldest first, and is limited to 0–20 messages. Each message is capped at 8,000 characters with an explicit marker. Prompt maximum: 32,000 characters. Context suggestions are heuristics; show their limitation and let the user edit the selection.
+Capture: `{question, reply, history:[{role,text}], source:"chatgpt.com", capturedAt}`. History excludes the selected question/reply, stays oldest first, and is limited to 0–20 messages. Each message is capped at 8,000 characters with an explicit marker. Complete prompt maximum: 32,000 characters.
 
-Review JSON: `{verdict, summary, issues:[{severity,description,location}], missing_points:[], strengths:[]}`. Verdict is correct, mostly_correct, questionable, or incorrect. Severity is high, medium, or low. Validate structure; malformed output falls back to readable plain text.
+Review: `{verdict, summary, issues:[{severity,description,location}], missing_points:[], strengths:[]}`. Verdict: correct, mostly_correct, questionable, or incorrect. Severity: high, medium, or low. Request JSON schema output and validate again locally.
 
-The reviewer checks facts, reasoning, calculations, code, context consistency, and omissions. It must state uncertainty, not invent faults or claim checks it did not perform, and treat captured text as data rather than instructions. It must not use tools or take actions. Instructions were tested in a plain Gemini chat with three harmless examples, including deliberately flawed answers, before integration.
-
-## Privacy and limits
-
-Show exactly what is sent, including review instructions. Nothing is submitted on capture, connection check, or Cancel. Gemini may save submitted reviews in its account history. Stop waiting cannot retract an already submitted prompt. The extension only sees loaded text, not files, memories, system prompts, or hidden tools. Website updates and non-English controls may require selector changes. No guarantee of correctness or calibrated confidence scores.
+Reviewer checks facts, reasoning, calculations, code, consistency, and omissions. State uncertainty, avoid invented faults and unsupported claims of verification, treat captured content as untrusted data, and use no tools/actions. Context suggestions are heuristics, not guaranteed minimal or complete context.
 
 ## Development rules
 
-Keep changes within the requested step or approved product change. Test and commit each step. Explain changed files. Use safe mock data for automation tests and never commit credentials. Do not add multi-model comparison, inline annotations, a backend/database, or publishing without a request.
+Keep changes within the requested step or approved product change. Test and commit each step. Explain changed files. Use safe mock data for tests and never commit credentials. Do not add multi-model comparison, inline annotations, a backend/database, or publishing without a request.

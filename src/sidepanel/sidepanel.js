@@ -1,5 +1,6 @@
 const fields = Object.fromEntries(Object.entries(PANEL_SELECTORS).map(([key, selector]) => [key,document.querySelector(selector)]));
 let currentReview = null, selection = [], renderedKey = '', pending = false;
+let activeRequest = null;
 function status(text, error = false) { fields.status.textContent = text; fields.status.dataset.error = error; }
 function updatePrompt() {
   try {
@@ -28,13 +29,12 @@ function renderResult(review) {
   }
 }
 function render(review) {
+  if (activeRequest && (review?.id !== activeRequest.id || review.phase !== 'waiting')) activeRequest.controller.abort();
   currentReview = review;
   const key = review ? `${review.id}:${review.phase}:${review.error || ''}` : '';
   if (key === renderedKey && renderedKey) return;
   renderedKey = key;
   fields.preview.hidden = review?.phase !== 'preview'; fields.result.hidden = review?.phase !== 'done';
-  fields.continue.hidden = review?.phase !== 'needs_attention';
-  fields.openGemini.hidden = !Number.isInteger(review?.geminiTabId);
   fields.cancel.hidden = !review || ['cancelled','done','error'].includes(review.phase);
   fields.cancel.textContent = review?.phase === 'preview' ? 'Cancel' : 'Stop waiting';
   if (!review) { status('Choose Cross-check below an answer in ChatGPT.'); return; }
@@ -52,15 +52,27 @@ function render(review) {
       container.append(label); addText(container,'pre',item.text); fields.history.append(container);
     });
     updatePrompt();
-  } else if (review.phase === 'done') { status('Review received from your Gemini chat.'); renderResult(review); }
-  else if (review.phase === 'error' || review.phase === 'needs_attention') status(review.error,true);
+  } else if (review.phase === 'done') { status('Review received from the Gemini API.'); renderResult(review); }
+  else if (review.phase === 'error') status(review.error,true);
   else if (review.phase === 'cancelled') status(review.notice);
-  else status({opening:'Opening a fresh Gemini chat…',sending:'Submitting your confirmed prompt…',waiting:'Gemini is reviewing. Keep its tab open; the result will appear here.'}[review.phase] || 'Working…');
+  else status({waiting:'Gemini is reviewing your answer…'}[review.phase] || 'Working…');
 }
 async function refresh() {
   if (pending) return;
   try { const response = await chrome.runtime.sendMessage({type:'GET_REVIEW'}); if (response?.error) status(response.error,true); else render(response.review); }
   catch { status('Reload the extension and reopen this panel.',true); }
+}
+function runReview(id, prompt) {
+  const job = {id, controller:new AbortController()};
+  activeRequest = job;
+  generateGeminiText(prompt,{maxOutputTokens:8192,schema:REVIEW_RESPONSE_SCHEMA,signal:job.controller.signal,headerTimeout:90000})
+    .then(raw => chrome.runtime.sendMessage({type:'API_REVIEW_RESULT',id,raw}), error => {
+      if (job.controller.signal.aborted) return;
+      return chrome.runtime.sendMessage({type:'API_REVIEW_ERROR',id,error:error instanceof GeminiError
+        ? error.message : 'The review failed. Cross-check the answer again to retry.'});
+    })
+    .catch(() => status('Could not save the review. Reopen the panel before trying again.',true))
+    .finally(() => { if (activeRequest === job) activeRequest = null; refresh(); });
 }
 async function action(type, extra={}) {
   if (pending || !currentReview) return;
@@ -68,6 +80,8 @@ async function action(type, extra={}) {
   try {
     const response = await chrome.runtime.sendMessage({type,id:currentReview.id,...extra});
     if (response?.error) { status(response.error,true); return; }
+    if (type === 'SEND_REVIEW' && response?.ok && response.id && typeof response.prompt === 'string') runReview(response.id,response.prompt);
+    if (type === 'CANCEL_REVIEW') activeRequest?.controller.abort();
     renderedKey = '';
   } catch { status('The extension stopped responding. Reopen this panel before trying again.',true); }
   finally { pending = false; if (currentReview.phase === 'preview') updatePrompt(); }
@@ -75,9 +89,13 @@ async function action(type, extra={}) {
 }
 fields.send.addEventListener('click',()=>action('SEND_REVIEW',{selected:selection}));
 fields.cancel.addEventListener('click',()=>action('CANCEL_REVIEW'));
-fields.continue.addEventListener('click',()=>action('CONTINUE_REVIEW'));
-fields.openGemini.addEventListener('click',()=>action('SHOW_GEMINI'));
 chrome.storage.onChanged.addListener((changes,area) => { if (area === 'session' && changes.review) refresh(); });
 const poll = setInterval(refresh,2000);
-window.addEventListener('pagehide',()=>clearInterval(poll));
+window.addEventListener('pagehide',()=>{
+  clearInterval(poll);
+  if (activeRequest) {
+    activeRequest.controller.abort();
+    chrome.runtime.sendMessage({type:'CANCEL_REVIEW',id:activeRequest.id}).catch(()=>{});
+  }
+});
 refresh();

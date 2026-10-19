@@ -1,16 +1,46 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Second Look · Settings</title><link rel="stylesheet" href="options.css">
-<script defer src="../../selectors.js"></script><script defer src="../shared/settings.js"></script><script defer src="options.js"></script></head>
-<body><main><p class="eyebrow">SECOND LOOK</p><h1>Use your Gemini account.</h1>
-<p class="intro">Sign in on Gemini’s own website once. Second Look submits reviews through a fresh Gemini tab and brings the response back here. No API key is needed.</p>
-<form id="settings-form"><fieldset id="settings-fields" disabled><legend>Connect Gemini</legend>
-<ol><li>Open Gemini and sign in normally. If you have several accounts, choose the one you want there.</li><li>Return to this page and check the connection.</li></ol>
-<div class="actions"><button id="open-gemini-setup" type="button">Open Gemini / sign in</button><button id="check-gemini-setup" type="button" class="secondary">Check connection</button></div>
-<p id="account-status" class="help">Your Google login stays in Gemini.</p>
-<label for="history-count">Earlier messages to consider</label><input id="history-count" type="number" min="0" max="20" step="1" required value="4">
-<p class="help">Up to 20 recent messages. Second Look suggests relevant context locally; you can change the selection before sending.</p>
-<div class="actions"><button type="submit">Save settings</button><button id="remove-key" type="button" class="secondary" hidden>Remove old API key</button></div>
-</fieldset></form><p id="settings-status" role="status" aria-live="polite">Loading settings…</p>
-<p class="privacy">You approve the exact prompt before it leaves ChatGPT. Reviews use the account and model available in Gemini’s website and may be saved in its chat history. Second Look does not read login cookies or passwords. Captured context and results are kept only in this browser session.</p>
-<p class="help">This is an experimental website integration. If Gemini changes its layout, the extension may need an update. Keep the review tab open until it finishes.</p>
-</main></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Second Look · Settings</title>
+  <link rel="stylesheet" href="options.css">
+  <script defer src="../../selectors.js"></script>
+  <script defer src="../shared/settings.js"></script>
+  <script defer src="options.js"></script>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">SECOND LOOK</p>
+    <h1>Your second opinion, your settings.</h1>
+    <p class="intro">Connect Gemini once with your own API key. Reviews will happen inside Second Look.</p>
+    <form id="settings-form">
+      <fieldset id="settings-fields" disabled>
+        <legend>Reviewer settings</legend>
+        <label for="provider">Provider</label>
+        <select id="provider" required>
+          <option value="google">Google Gemini</option>
+        </select>
+        <label for="model">Model name</label>
+        <input id="model" type="text" required maxlength="128" autocomplete="off" spellcheck="false" aria-describedby="model-help">
+        <p id="model-help" class="help">Default: Gemini 3.5 Flash-Lite. You can enter another supported Gemini model ID.</p>
+        <label for="api-key">API key</label>
+        <input id="api-key" type="password" maxlength="4096" autocomplete="off" spellcheck="false" aria-describedby="key-help key-status">
+        <p id="key-help" class="help"><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Create a key in Google AI Studio</a>, then paste it here and save. Leave blank to keep a saved Gemini key.</p>
+        <p id="key-status" class="help">No key saved.</p>
+        <button id="remove-key" type="button" class="secondary" disabled>Remove saved key</button>
+        <label for="history-count">Earlier messages to capture</label>
+        <input id="history-count" type="number" min="0" max="20" step="1" required value="4" aria-describedby="history-help">
+        <p id="history-help" class="help">Capture up to 0–20 earlier messages. You choose which to send in the review preview. Default: 4.</p>
+        <div class="actions">
+          <button id="save-settings" type="submit">Save settings</button>
+          <button id="test-connection" type="button" class="secondary" aria-describedby="connection-help">Test connection</button>
+        </div>
+        <p id="connection-help" class="help">Sends a small test prompt to Google using your saved settings. No chat content is included. API usage may be billed.</p>
+      </fieldset>
+    </form>
+    <p id="settings-status" role="status" aria-live="polite">Loading settings…</p>
+    <p class="privacy">Settings stay in this Chrome profile. Your key is stored locally, not synced, and isn’t encrypted by this extension. Saving settings sends nothing to a provider.</p>
+  </main>
+</body>
+</html>

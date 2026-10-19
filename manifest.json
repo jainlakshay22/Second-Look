@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Second Look",
-  "version": "0.2.0",
-  "description": "Cross-check ChatGPT answers using your signed-in Gemini account.",
+  "version": "0.3.0",
+  "description": "Cross-check ChatGPT answers with the Gemini API and your locally saved API key.",
   "action": {
     "default_title": "Second Look",
     "default_popup": "popup.html"
@@ -21,16 +21,6 @@
       "css": [
         "content.css"
       ]
-    },
-    {
-      "matches": [
-        "https://gemini.google.com/*"
-      ],
-      "js": [
-        "selectors.js",
-        "src/gemini/content.js"
-      ],
-      "run_at": "document_idle"
     }
   ],
   "permissions": [
@@ -38,7 +28,7 @@
     "sidePanel"
   ],
   "host_permissions": [
-    "https://gemini.google.com/*"
+    "https://generativelanguage.googleapis.com/*"
   ],
   "background": {
     "service_worker": "src/background/service-worker.js"

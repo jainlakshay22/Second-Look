@@ -1,42 +1,43 @@
 # Second Look
 
-A Manifest V3 Chrome extension that adds **Cross-check** to ChatGPT answers and reviews them through the user's signed-in Gemini website account. This is an experimental browser integration, not an official Gemini integration.
+A Manifest V3 Chrome extension that adds **Cross-check** to ChatGPT answers and reviews them through the **Gemini API**. No Gemini website login or extra Gemini tabs are needed.
 
 ## Load and connect
 
-1. Open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select this folder.
-2. Open Second Look's **Settings** from the extension popup.
-3. Select **Open Gemini / sign in**. Sign in on Google's own page and select your preferred account.
-4. Return to Settings and select **Check connection**. No API key is required.
-5. Refresh any ChatGPT tab that was open before loading or reloading the extension.
+1. Open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select this folder. For an existing installation, click **Reload**.
+2. Open Second Look's **API key / Settings** from the extension popup.
+3. Paste your Gemini API key, then **Save settings**. An existing saved Gemini key is preserved; leave the field blank to keep it.
+4. Click **Test connection**. This sends only a small test prompt; API usage may be billed.
+5. Refresh any ChatGPT tab opened before loading or reloading the extension.
+
+Default model: `gemini-3.5-flash-lite`, with minimal thinking for faster reviews. You can change the model in Settings. See Google's [model information](https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite) and [structured-output documentation](https://ai.google.dev/gemini-api/docs/generate-content/structured-output).
 
 ## Review an answer
 
-Click **Cross-check** under an answer. The side panel shows the question, selected answer, suggested earlier messages, and exact review prompt. Adjust the context and click **Send to Gemini**, or **Cancel**. A fresh Gemini tab opens automatically; keep it open until the response arrives in the side panel. If Gemini needs sign-in or setup, finish it there and press **Continue review** in the panel. Avoid typing in the dedicated review tab while it is running.
+Click **Cross-check** under an answer. The side panel shows the question, selected answer, suggested earlier messages, and exact review prompt. Adjust the context and click **Send to Gemini**, or **Cancel**. The structured result appears in the same panel. Keep the panel open while a review runs; closing it cancels the local request. No browser login is involved.
 
-The Gemini website controls the model and account limits. To switch accounts, repeat the setup steps. A multi-account Gemini URL is remembered when the website exposes one; otherwise Gemini's default signed-in account applies. The extension does not independently authenticate an account or read passwords, tokens, or cookies.
+## Privacy and limits
 
-## Privacy and limitations
-
-- Nothing is submitted until **Send to Gemini**. Opening Settings or checking connection submits no prompt.
-- Questions, answers, and results stay in `chrome.storage.session`, restricted to trusted extension pages. They are not saved to disk by extension code; session storage clears when Chrome restarts or the extension reloads. Cancel clears the local captured context.
-- Sent prompts and responses may remain in the user's Gemini history and are subject to Google's account settings. Stop waiting cannot undo a submission.
-- Existing API keys from the earlier prototype are unused. Settings offers **Remove old API key** to delete one. There is no API endpoint permission or API request code in this version.
-- Only currently loaded ChatGPT text is available. Files, tool results, hidden prompts, and memories are not captured. Each message is limited to 8,000 characters with a `[Truncated]` marker. The preview limits the total prompt to 32,000 characters.
-- Context suggestions use local word overlap and follow-up hints, not semantic certainty. Check the selection before sending.
-- Gemini's website markup, English accessibility labels, sign-in flows, usage limits, or unexpected dialogs can interrupt automation. Non-English Gemini interfaces may require selector updates. It will not automatically resubmit uncertain requests.
-- A second model's review is not independent fact verification. Unexpected output is shown safely as plain text.
+- Conversation text is sent only after **Send to Gemini**. Saving settings and previewing send nothing.
+- Your API key stays in local Chrome storage, restricted to trusted extension pages. It is not synced, bundled in the extension, included in URLs, or sent to ChatGPT. It is not encrypted by the extension. Only trusted extension code sends it to Google's API in the authentication header.
+- One installed Chrome profile uses its saved key for all reviews. To distribute the extension using one centrally owned key, add a server-side proxy first; do not bundle the key in extension files.
+- Review context and results use trusted-only `chrome.storage.session` and clear on browser restart or extension reload. Cancel clears captured context. Google receives submitted prompts under its API data policies; cancellation cannot undo a request already received by Google.
+- Only currently loaded ChatGPT text is available. Files, hidden prompts, and memories are not captured. Each message is capped at 8,000 characters, marked `[Truncated]`; the complete prompt is capped at 32,000 characters.
+- Context suggestions use local word overlap and follow-up hints. Check the selection before sending.
+- Connection tests wait up to 25 seconds. Full reviews run in the trusted side panel and wait up to 90 seconds for initial response headers. Reviews stream over the API and can continue for up to 90 seconds after headers arrive. Quota, invalid-key, model, network, and incomplete-response errors are shown without raw provider details. There are no automatic retries. After an error, Cross-check again to retry.
+- A second model's review is not independent fact verification. Unexpected output is shown safely as text.
 
 ## Files
 
-- `selectors.js`: every DOM query selector for ChatGPT, Gemini, and extension pages.
+- `manifest.json`: extension permissions, ChatGPT script, worker, popup, and side panel.
+- `selectors.js`: all DOM query selectors for ChatGPT and extension pages.
 - `content.js`, `context.js`, `content.css`: ChatGPT buttons and local context extraction.
-- `src/gemini/content.js`: fills an empty Gemini chat once, watches completion, returns only the new review.
-- `src/background/service-worker.js`: trusted message routing, consent state, dedicated tabs, session storage.
-- `src/shared/review.js`: prompt, local context suggestions, output validation.
-- `src/options/`: browser-account setup and capture settings.
+- `src/background/gemini.js`: API requests, structured output, cancellation, timeouts, and sanitized errors.
+- `src/background/service-worker.js`: trusted message routing, duplicate-request protection, and session storage.
+- `src/shared/review.js`: reviewer prompt, context suggestions, schema, and output validation.
+- `src/shared/settings.js`, `src/options/`: local key/model settings and connection test.
 - `src/sidepanel/`: preview, Send/Cancel, progress, and structured results.
 
 ## Checks
 
-Run `node --test tests/*.test.cjs` (Node 20+). These tests use synthetic text and mocked Chrome APIs. Manually verify account setup, preview cancellation, a completed review, and the closed-tab error after changes to browser integration. The initial reviewer instructions were tried in Gemini with correct multiplication, an incorrect capital city, and an unsafe JavaScript function.
+Run `node --test tests/*.test.cjs` (Node 20+). Tests use synthetic text, fake credentials, and mocked Chrome/API responses. Manually verify Settings → Test connection, preview cancellation, and a completed review after changes to API integration.

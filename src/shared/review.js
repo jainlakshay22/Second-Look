@@ -60,3 +60,18 @@ function parseReview(raw) {
     return value;
   } catch { return null; }
 }
+
+// Sent as Gemini's structured-output schema; parseReview still validates locally.
+const REVIEW_RESPONSE_SCHEMA = {
+  type: 'object',
+  properties: {
+    verdict: {type:'string', enum:['correct','mostly_correct','questionable','incorrect']},
+    summary: {type:'string'},
+    issues: {type:'array', maxItems:50, items:{type:'object', properties:{
+      severity:{type:'string',enum:['high','medium','low']}, description:{type:'string'}, location:{type:'string'},
+    }, required:['severity','description','location']}},
+    missing_points: {type:'array',maxItems:50,items:{type:'string'}},
+    strengths: {type:'array',maxItems:50,items:{type:'string'}},
+  },
+  required:['verdict','summary','issues','missing_points','strengths'],
+};

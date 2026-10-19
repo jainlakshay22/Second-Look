@@ -11,22 +11,21 @@ const CROSS_CHECK_SELECTORS = Object.freeze({
   crossCheckButton: '[data-second-look-button]',
 });
 
-// Extension settings, panel, and Gemini website selectors stay here too.
+// Selectors for the extension's settings page also stay in this file.
 const SETTINGS_SELECTORS = Object.freeze({
-  form: '#settings-form', fieldset: '#settings-fields', historyCount: '#history-count',
-  removeKey: '#remove-key', status: '#settings-status', accountStatus: '#account-status',
-  openGemini: '#open-gemini-setup', checkGemini: '#check-gemini-setup',
+  form: "#settings-form",
+  fieldset: "#settings-fields",
+  provider: "#provider",
+  model: "#model",
+  apiKey: "#api-key",
+  historyCount: "#history-count",
+  keyStatus: "#key-status",
+  removeKey: "#remove-key",
+  testConnection: "#test-connection",
+  status: "#settings-status",
 });
+
 const PANEL_SELECTORS = Object.freeze({
   status:'#status', preview:'#preview', question:'#question', answer:'#answer',
-  history:'#history', prompt:'#prompt', size:'#size', send:'#send', cancel:'#cancel',
-  continue:'#continue', openGemini:'#open-gemini', result:'#result',
-});
-const GEMINI_SELECTORS = Object.freeze({
-  composer: '.ql-editor[contenteditable="true"][role="textbox"]',
-  account: 'a[href*="accounts.google.com/SignOutOptions"]',
-  send: 'button[aria-label="Send message"]',
-  stop: 'button[aria-label="Stop response"]',
-  response: 'model-response', user: 'user-query', body: '.markdown', code: 'pre code',
-  copy: 'button[aria-label="Copy"]',
+  history:'#history', prompt:'#prompt', size:'#size', send:'#send', cancel:'#cancel', result:'#result',
 });
