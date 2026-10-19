@@ -13,24 +13,20 @@
   <main>
     <p class="eyebrow">SECOND LOOK</p>
     <h1>Your second opinion, your settings.</h1>
-    <p class="intro">Choose the provider and model you want to review your answers.</p>
+    <p class="intro">Connect Gemini once with your own API key. Reviews will happen inside Second Look.</p>
     <form id="settings-form">
       <fieldset id="settings-fields" disabled>
         <legend>Reviewer settings</legend>
         <label for="provider">Provider</label>
         <select id="provider" required>
-          <option value="">Choose a provider</option>
-          <option value="openai">OpenAI</option>
-          <option value="anthropic">Anthropic</option>
           <option value="google">Google Gemini</option>
-          <option value="openrouter">OpenRouter</option>
         </select>
         <label for="model">Model name</label>
-        <input id="model" type="text" required maxlength="200" autocomplete="off" spellcheck="false" aria-describedby="model-help">
-        <p id="model-help" class="help">Enter the exact model ID from your provider. Choose a different model from the one answering your chat.</p>
+        <input id="model" type="text" required maxlength="128" autocomplete="off" spellcheck="false" aria-describedby="model-help">
+        <p id="model-help" class="help">Default: Gemini 3.8 Flash. You can enter another supported Gemini model ID.</p>
         <label for="api-key">API key</label>
         <input id="api-key" type="password" maxlength="4096" autocomplete="off" spellcheck="false" aria-describedby="key-help key-status">
-        <p id="key-help" class="help">Leave blank to keep the saved key. Changing providers clears the old key unless you enter a replacement.</p>
+        <p id="key-help" class="help"><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Create a key in Google AI Studio</a>, then paste it here and save. Leave blank to keep a saved Gemini key.</p>
         <p id="key-status" class="help">No key saved.</p>
         <button id="remove-key" type="button" class="secondary" disabled>Remove saved key</button>
         <label for="history-count">Earlier messages to include</label>
@@ -38,9 +34,9 @@
         <p id="history-help" class="help">0–20 messages, in addition to the question and selected reply. Default: 4.</p>
         <div class="actions">
           <button id="save-settings" type="submit">Save settings</button>
-          <button type="button" class="secondary" disabled aria-describedby="connection-help">Test connection</button>
+          <button id="test-connection" type="button" class="secondary" aria-describedby="connection-help">Test connection</button>
         </div>
-        <p id="connection-help" class="help">Connection testing isn’t available yet.</p>
+        <p id="connection-help" class="help">Sends a small test prompt to Google using your saved settings. No chat content is included. API usage may be billed.</p>
       </fieldset>
     </form>
     <p id="settings-status" role="status" aria-live="polite">Loading settings…</p>

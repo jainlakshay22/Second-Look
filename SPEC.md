@@ -46,7 +46,7 @@ The goal is not to compare answers side by side. The goal is to answer: **"I alr
 - `chrome.storage.local` for settings
 - `chrome.runtime` messaging between content script and service worker
 - Chrome **Side Panel API** for the UI
-- Reviewer model accessed through a provider API with the user's own key (provider and model name are configurable in settings)
+- Reviewer model accessed through the Gemini API with the user's own key. Default: `gemini-3.8-flash`; model name is configurable. One-time key creation happens in Google AI Studio; reviews happen inside the extension.
 
 ## 6. File structure
 
@@ -81,7 +81,7 @@ second-look/
 1. **All DOM selectors go in `selectors.js`.** Chat sites change their markup often; this keeps fixes to one file.
 2. **API calls happen only in the service worker.** The content script never sees the API key.
 3. **The API key is stored only in `chrome.storage.local`.** Never hardcoded, never logged, never committed to git.
-4. **Nothing is sent to any API until the user confirms in the preview.**
+4. **No conversation content is sent to any API until the user confirms in the preview.** Settings may offer an explicit **Test connection** action that sends only a fixed, harmless test prompt with no conversation data.
 5. **The content script handles the page; the side panel handles display.** Keep them decoupled via messages.
 6. **No duplicate buttons.** Use a marker attribute on processed messages.
 7. **Handle dynamically loaded replies** with a `MutationObserver`.
@@ -144,6 +144,8 @@ The prompt (in `prompt.js`) should instruct the reviewer to:
 - Provider and model name
 - Number of previous messages to include (default 4)
 - A "Test connection" button
+
+Gemini is the only active provider in v1. Existing keys from other providers must never be reused for Gemini. Test connection uses saved settings and sends no chat content. Google account login alone does not configure API access; the user supplies their own Gemini API key.
 
 ## 12. Error handling
 

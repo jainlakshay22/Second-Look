@@ -21,5 +21,6 @@ const SETTINGS_SELECTORS = Object.freeze({
   historyCount: "#history-count",
   keyStatus: "#key-status",
   removeKey: "#remove-key",
+  testConnection: "#test-connection",
   status: "#settings-status",
 });
