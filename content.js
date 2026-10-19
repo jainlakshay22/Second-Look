@@ -1,7 +1,7 @@
 console.log("extension loaded");
 
 // Only the latest capture is retained, in this extension's isolated script memory.
-// No storage, page events, or network requests are used for the capture.
+// The worker keeps the preview in session storage until the user sends or cancels it.
 let lastCapturedContext = null;
 
 // Query each time: ChatGPT can add or replace messages without a page reload.
@@ -31,11 +31,14 @@ function injectCrossCheckButtons() {
       button.textContent = "Cross-check";
       button.className = "second-look-cross-check";
       button.setAttribute("data-second-look-button", "");
-      button.title = "Capture this reply and recent conversation locally";
+      button.title = "Preview a Gemini review of this reply";
       button.addEventListener("click", async () => {
         lastCapturedContext = null;
         button.disabled = true;
         try {
+          // Open before awaiting anything so Chrome retains the click gesture.
+          const panel = await chrome.runtime.sendMessage({type: "OPEN_PREVIEW"});
+          if (!panel?.ok) throw new Error("Could not open the preview. Reload the extension and refresh ChatGPT.");
           // Ask the worker only for non-secret capture settings.
           let settings;
           try {
@@ -48,15 +51,10 @@ function injectCrossCheckButtons() {
             throw new Error("Could not read settings. Reload the extension and refresh ChatGPT.");
           }
           lastCapturedContext = captureContext(reply, settings.historyCount);
-          button.textContent = "Captured locally";
-          button.title = "Context captured locally. Nothing has been sent.";
-          // Log counts only; inspect lastCapturedContext explicitly in the
-          // extension's DevTools context when debugging the captured object.
-          console.log("[Second Look] Context captured locally", {
-            questionCharacters: lastCapturedContext.question.length,
-            replyCharacters: lastCapturedContext.reply.length,
-            historyMessages: lastCapturedContext.history.length,
-          });
+          const result = await chrome.runtime.sendMessage({type: "CAPTURE_REVIEW", context: lastCapturedContext});
+          if (result?.error || !result?.ok) throw new Error(result?.error || "Could not prepare the review preview.");
+          button.textContent = "Preview ready";
+          button.title = "Choose the context and confirm Send in the side panel. Nothing has been sent to Gemini.";
         } catch (error) {
           button.textContent = "Capture failed";
           button.title = error.message;

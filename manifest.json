@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "ChatGPT Cross-check",
-  "version": "0.1.0",
-  "description": "ChatGPT Cross-check starter extension with a hello popup.",
+  "name": "Second Look",
+  "version": "0.2.0",
+  "description": "Cross-check ChatGPT answers using your signed-in Gemini account.",
   "action": {
-    "default_title": "ChatGPT Cross-check",
+    "default_title": "Second Look",
     "default_popup": "popup.html"
   },
   "content_scripts": [
@@ -21,13 +21,24 @@
       "css": [
         "content.css"
       ]
+    },
+    {
+      "matches": [
+        "https://gemini.google.com/*"
+      ],
+      "js": [
+        "selectors.js",
+        "src/gemini/content.js"
+      ],
+      "run_at": "document_idle"
     }
   ],
   "permissions": [
-    "storage"
+    "storage",
+    "sidePanel"
   ],
   "host_permissions": [
-    "https://generativelanguage.googleapis.com/*"
+    "https://gemini.google.com/*"
   ],
   "background": {
     "service_worker": "src/background/service-worker.js"
@@ -35,5 +46,9 @@
   "options_ui": {
     "page": "src/options/options.html",
     "open_in_tab": true
+  },
+  "minimum_chrome_version": "116",
+  "side_panel": {
+    "default_path": "src/sidepanel/sidepanel.html"
   }
 }
