@@ -24,6 +24,11 @@ function renderResult(review) {
     addText(fields.result,'pre',review.raw || 'No readable response.');
     return;
   }
+  if (Array.isArray(result.claims)) {
+    fields.result.dataset.verdict = 'claims';
+    renderClaimResult(fields.result, review.context.reply, result);
+    return;
+  }
   const verdict = document.createElement('div'); verdict.className = 'verdict';
   addText(verdict,'p','VERDICT').className = 'eyebrow';
   addText(verdict,'h2',result.verdict.replaceAll('_',' '));

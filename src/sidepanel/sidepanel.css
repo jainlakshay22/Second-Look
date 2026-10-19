@@ -70,3 +70,20 @@ blockquote { margin: 6px 0 0; border-left: 2px solid var(--line); padding: 0 0 0
 [hidden] { display: none !important; }
 @media (max-width: 350px) { main { padding: 14px; } .verdict, .review-section, .review-source { padding-left: 14px; padding-right: 14px; } }
 @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+
+.claim-review h2 { margin-top: 20px; }
+.claim-legend { display: flex; flex-wrap: wrap; gap: 8px; }
+.claim-label { padding: 2px 7px; border-radius: 4px; font-size: 12px; text-transform: capitalize; }
+.claim-answer { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.9; }
+button.claim-highlight { display: inline; padding: 0; border: 0; border-radius: 2px; font: inherit; text-align: inherit; white-space: pre-wrap; overflow-wrap: anywhere; text-decoration-line: underline; text-underline-offset: 3px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.claim-label[data-verdict=supported], .claim-highlight[data-verdict=supported] { background: #e1f2e5; color: #214c36; text-decoration-style: solid; }
+.claim-label[data-verdict=contradicted], .claim-highlight[data-verdict=contradicted] { background: #fce8e5; color: #852e29; text-decoration-style: double; }
+.claim-label[data-verdict=unverified], .claim-highlight[data-verdict=unverified] { background: #fff1d7; color: #775214; text-decoration-style: dotted; }
+.claim-highlight[aria-pressed=true] { outline: 2px solid var(--green); outline-offset: 2px; }
+.claim-details, .unmatched-claims { margin-top: 20px; border-top: 1px solid var(--line); }
+.claim-card { border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.claim-card h4 { margin: 0 0 8px; text-transform: capitalize; }
+.claim-card p { white-space: pre-wrap; }
+.claim-card[data-verdict=supported] { border-left: 3px solid #39724d; }
+.claim-card[data-verdict=contradicted] { border-left: 3px solid #a23c36; }
+.claim-card[data-verdict=unverified] { border-left: 3px solid #a57b27; }
