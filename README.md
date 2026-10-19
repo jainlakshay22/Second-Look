@@ -1,31 +1,63 @@
 # Second Look
 
-A Manifest V3 Chrome extension that adds **Cross-check** to ChatGPT answers and reviews them through the **Gemini API**. No Gemini website login or extra Gemini tabs are needed.
+Cross-check ChatGPT answers with Gemini, source-backed claim reviews, and inline highlights—all in a Chrome side panel.
 
-## Load and connect
+Second Look adds a **Cross-check** button to ChatGPT replies. Choose **Review** for an overall assessment or **Verify claims** to check individual factual claims. Inspect the answer and recent context before sending, then explore verdicts, explanations, and sources beside the original conversation. It uses your own Gemini API key.
 
-1. Open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select this folder. For an existing installation, click **Reload**.
-2. Open Second Look's **API key / Settings** from the extension popup.
-3. Paste your Gemini API key, then **Save settings**. An existing saved Gemini key is preserved; leave the field blank to keep it.
-4. Click **Test connection**. This sends only a small test prompt; API usage may be billed.
-5. Refresh any ChatGPT tab opened before loading or reloading the extension.
+> **Demo GIF placeholder:** Cross-check → choose Verify claims → send → click a highlighted claim to see its explanation and sources.
+<!-- Replace the placeholder above with the demo when recorded: ![Second Look demo](docs/demo.gif) -->
 
-Default model: `gemini-3.5-flash-lite`, with minimal thinking for faster reviews. You can change the model in Settings. See Google's [model information](https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite) and [structured-output documentation](https://ai.google.dev/gemini-api/docs/generate-content/structured-output).
+## Quick install
 
-## Review an answer
+1. Download or clone this repository. Open `chrome://extensions` and turn on **Developer mode**.
+2. Click **Load unpacked** and select the repository folder containing `manifest.json`.
+3. Open Second Look's popup → **API key / Settings**, enter your Gemini API key, and click **Save settings**. Optionally use **Test connection**.
+4. For source-backed verification, enable **Use Google Search for claim verification** in Settings and save. It is off by default; API and Search usage may incur charges.
+5. Refresh ChatGPT, click **Cross-check** below a reply, choose a mode, review the selected context, and click **Send to Gemini**.
 
-Click **Cross-check** under an answer. The side panel shows the question, selected answer, suggested earlier messages, and exact review prompt. Adjust the context and click **Send to Gemini**, or **Cancel**. The result shows a verdict, severity-labelled issue cards, missing points, and strengths in the same panel. **Review again** reopens the saved context for a new confirmation. Keep the panel open while a review runs; closing it cancels the local request. No browser login is involved.
+After updating the extension, click **Reload** at `chrome://extensions`, refresh ChatGPT, and reopen the side panel.
 
-## Privacy and limits
+## How it works
 
-- Conversation text is sent only after **Send to Gemini**. Saving settings and previewing send nothing.
-- Your API key stays in local Chrome storage, restricted to trusted extension pages. It is not synced, bundled in the extension, included in URLs, or sent to ChatGPT. It is not encrypted by the extension. Only trusted extension code sends it to Google's API in the authentication header.
-- One installed Chrome profile uses its saved key for all reviews. To distribute the extension using one centrally owned key, add a server-side proxy first; do not bundle the key in extension files.
-- Review context and results use trusted-only `chrome.storage.session` and clear on browser restart or extension reload. Cancel clears captured context. Google receives submitted prompts under its API data policies; cancellation cannot undo a request already received by Google.
-- Only currently loaded ChatGPT text is available. Files, hidden prompts, and memories are not captured. Each message is capped at 8,000 characters, marked `[Truncated]`; the complete prompt is capped at 32,000 characters.
-- Context suggestions use local word overlap and follow-up hints. Check the selection before sending.
-- Connection tests wait up to 25 seconds. Full reviews run in the trusted side panel and wait up to 90 seconds for initial response headers. Reviews stream over the API and can continue for up to 90 seconds after headers arrive. Quota, invalid-key, model, network, and incomplete-response errors are shown without raw provider details. There are no automatic retries. After an error, choose **Review context & retry** to reopen the same captured answer and selection. Nothing is sent until you confirm **Send to Gemini** again. To capture updated text, click Cross-check in ChatGPT instead.
-- A second model's review is not independent fact verification. Unexpected output is shown safely as text.
+1. **Claim extraction.** In Verify claims mode, Gemini extracts factual claims and copies an exact quote for each one. The extension validates those quotes against the selected answer and labels claims **supported**, **contradicted**, or **unverified**.
+2. **Search grounding.** When enabled, Gemini uses Google Search during verification. The extension retains provider source metadata and checks claim citations against the returned URLs. Claims without matching evidence remain unverified; with grounding off, the current verifier cannot independently verify them.
+3. **Inline highlights.** The panel renders the answer as safe text and colors exact quote matches by verdict. Click a highlight to read the explanation and open source links. Overlapping claims remain accessible; unmatched quotes are listed below the answer.
+
+**Review** keeps the general assessment: an overall verdict, issues, missing points, and strengths. Verification is an aid to checking an answer, not a guarantee that every claim is correct.
+
+For data handling, permissions, context limits, cancellation, and timeouts, see [Privacy and technical details](docs/DETAILS.md).
+
+## Evaluation
+
+The [evaluation suite](eval/README.md) contains **25 synthetic cases** covering correct facts, planted factual errors, wrong math, and short buggy code, with **16 wrong and 15 correct gold claims**. Catch rate measures wrong claims flagged as contradicted; false-alarm rate measures correct claims flagged as contradicted.
+
+Latest saved run: **20 October 2026**, `gemini-3.5-flash-lite`, Google Search on, fixture version 1.
+
+**Run stopped by quota; performance remains unmeasured.** The first request returned HTTP 429, so **0/25 cases completed**, one failed, and 24 were not run. The scorer counts missing results as omissions. Its zero rates below do **not** demonstrate either accuracy or an absence of false alarms; a completed run is still needed.
+
+| Metric | Result |
+| --- | ---: |
+| Catch rate (wrong claims contradicted) | 0/16 (0.0%) |
+| False-alarm rate (correct claims contradicted) | 0/15 (0.0%) |
+| Extraction coverage | 0/31 (0.0%) |
+| Omitted gold claims | 31 |
+| Unverified gold claims | 0 |
+| Correct claims marked unverified | 0 |
+| Wrong claims marked supported | 0 |
+| Unmatched / ambiguous predictions | 0 / 0 |
+| Gold claims with conflicting predictions | 0 |
+| Failed cases / not run | 1 / 24 |
+| Invalid review/source outputs | 0 |
+
+This is a snapshot of the local `eval/results.json`; generated results are not committed. To run a fresh evaluation and print the full report:
+
+```sh
+# Set GEMINI_API_KEY in your environment first; see eval/README.md.
+node eval/run-eval.js
+node eval/score.js
+```
+
+Live evaluations consume API/Search quota and may incur charges. See the [evaluation guide](eval/README.md) for secure key entry, matching rules, failure handling, and how to interpret the rates.
 
 ## Files
 
@@ -40,4 +72,10 @@ Click **Cross-check** under an answer. The side panel shows the question, select
 
 ## Checks
 
-Run `node --test tests/*.test.cjs` (Node 20+). Tests use synthetic text, fake credentials, and mocked Chrome/API responses. Manually verify Settings → Test connection, preview cancellation, and a completed review after changes to API integration.
+Run the extension and evaluation tests locally (Node.js 20+):
+
+```sh
+node --test tests/*.test.cjs eval/eval.test.cjs
+```
+
+Tests use synthetic text, fake credentials, and mocked Chrome/API responses. They consume no API quota. After changing the API integration, manually check Settings → Test connection, preview cancellation, and a completed review.
