@@ -35,3 +35,10 @@ Reviewer checks facts, reasoning, calculations, code, consistency, and omissions
 ## Development rules
 
 Keep changes within the requested step or approved product change. Test and commit each step. Explain changed files. Use safe mock data for tests and never commit credentials. Do not add multi-model comparison, inline annotations, a backend/database, or publishing without a request.
+
+## Completed polish step
+
+- Distinct verdict treatments and severity-labelled issue cards; meaning never relies on color alone.
+- Visible waiting state with reduced-motion support and clear guidance to keep the panel open.
+- Error recovery and Review again return to the existing captured context with a fresh review ID. Retain selected messages; discard the previous result/error. Send must be confirmed again. Ignore late messages for the old ID.
+- Preview, waiting, and cancelled reviews cannot be reopened through this recovery action. Cancel continues to clear captured context.

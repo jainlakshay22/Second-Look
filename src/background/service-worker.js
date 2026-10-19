@@ -52,7 +52,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     return true;
   }
   const allowed = (chat && ['OPEN_PREVIEW','CAPTURE_REVIEW','GET_CAPTURE_SETTINGS'].includes(message.type))
-    || (panel && ['GET_REVIEW','SEND_REVIEW','CANCEL_REVIEW','API_REVIEW_RESULT','API_REVIEW_ERROR'].includes(message.type));
+    || (panel && ['GET_REVIEW','SEND_REVIEW','EDIT_REVIEW','CANCEL_REVIEW','API_REVIEW_RESULT','API_REVIEW_ERROR'].includes(message.type));
   if (!allowed) return false;
   // Chrome must see sidePanel.open directly in the original click's event handler.
   const opened = message.type === 'OPEN_PREVIEW'
@@ -73,6 +73,15 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     }
     if (message.type === 'GET_REVIEW') return {review};
     if (!review || message.id !== review.id) return {error:'This review has changed. Reopen the preview.'};
+    if (message.type === 'EDIT_REVIEW') {
+      if (!['error','done'].includes(review.phase) || !validContext(review.context)) {
+        return {error:'This review cannot be reopened. Cross-check the answer again in ChatGPT.'};
+      }
+      // A fresh ID isolates this preview from late responses to the previous request.
+      review = {id:crypto.randomUUID(),transport:'api',phase:'preview',context:review.context,
+        selected:review.selected,createdAt:Date.now()};
+      await save(review);return {ok:true};
+    }
     if (message.type === 'SEND_REVIEW') {
       if (review.phase !== 'preview') return {error:'This review has already been sent or cancelled.'};
       let prompt;

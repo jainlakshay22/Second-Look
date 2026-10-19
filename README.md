@@ -14,7 +14,7 @@ Default model: `gemini-3.5-flash-lite`, with minimal thinking for faster reviews
 
 ## Review an answer
 
-Click **Cross-check** under an answer. The side panel shows the question, selected answer, suggested earlier messages, and exact review prompt. Adjust the context and click **Send to Gemini**, or **Cancel**. The structured result appears in the same panel. Keep the panel open while a review runs; closing it cancels the local request. No browser login is involved.
+Click **Cross-check** under an answer. The side panel shows the question, selected answer, suggested earlier messages, and exact review prompt. Adjust the context and click **Send to Gemini**, or **Cancel**. The result shows a verdict, severity-labelled issue cards, missing points, and strengths in the same panel. **Review again** reopens the saved context for a new confirmation. Keep the panel open while a review runs; closing it cancels the local request. No browser login is involved.
 
 ## Privacy and limits
 
@@ -24,7 +24,7 @@ Click **Cross-check** under an answer. The side panel shows the question, select
 - Review context and results use trusted-only `chrome.storage.session` and clear on browser restart or extension reload. Cancel clears captured context. Google receives submitted prompts under its API data policies; cancellation cannot undo a request already received by Google.
 - Only currently loaded ChatGPT text is available. Files, hidden prompts, and memories are not captured. Each message is capped at 8,000 characters, marked `[Truncated]`; the complete prompt is capped at 32,000 characters.
 - Context suggestions use local word overlap and follow-up hints. Check the selection before sending.
-- Connection tests wait up to 25 seconds. Full reviews run in the trusted side panel and wait up to 90 seconds for initial response headers. Reviews stream over the API and can continue for up to 90 seconds after headers arrive. Quota, invalid-key, model, network, and incomplete-response errors are shown without raw provider details. There are no automatic retries. After an error, Cross-check again to retry.
+- Connection tests wait up to 25 seconds. Full reviews run in the trusted side panel and wait up to 90 seconds for initial response headers. Reviews stream over the API and can continue for up to 90 seconds after headers arrive. Quota, invalid-key, model, network, and incomplete-response errors are shown without raw provider details. There are no automatic retries. After an error, choose **Review context & retry** to reopen the same captured answer and selection. Nothing is sent until you confirm **Send to Gemini** again. To capture updated text, click Cross-check in ChatGPT instead.
 - A second model's review is not independent fact verification. Unexpected output is shown safely as text.
 
 ## Files

@@ -4,7 +4,11 @@
 <script defer src="../../selectors.js"></script><script defer src="../shared/review.js"></script><script defer src="../shared/settings.js"></script><script defer src="../background/gemini.js"></script><script defer src="sidepanel.js"></script></head>
 <body><main>
 <header><p class="eyebrow">SECOND LOOK</p><a href="../options/options.html" target="_blank" rel="noopener">Settings</a></header>
-<h1>A second opinion.</h1><p id="status" role="status" aria-live="polite">Choose Cross-check below an answer in ChatGPT.</p>
+<h1>A second opinion.</h1>
+<div id="status-box" class="status-box">
+  <p id="status" role="status" aria-live="polite">Choose Cross-check below an answer in ChatGPT.</p>
+  <div id="progress" hidden><span class="spinner" aria-hidden="true"></span><p class="help">Keep this panel open. A review can take up to three minutes. You can stop waiting at any time.</p></div>
+</div>
 <section id="preview" hidden>
   <h2>Review before sending</h2><p class="help">Only the prompt below is sent to the Gemini API using your saved key. API usage and quota apply.</p>
   <h3>Question</h3><pre id="question"></pre><h3>Answer to review</h3><pre id="answer"></pre>
@@ -12,7 +16,7 @@
   <details><summary>Exact prompt to send</summary><pre id="prompt"></pre></details><p id="size" class="help"></p>
   <button id="send">Send to Gemini</button>
 </section>
-<div class="actions"><button id="cancel" class="secondary" hidden>Cancel</button></div>
-<section id="result" hidden></section>
+<div class="actions"><button id="cancel" class="secondary" hidden>Cancel</button><button id="retry" class="secondary" hidden>Review context &amp; retry</button></div>
+<section id="result" aria-label="Review result" hidden></section>
 <p class="help footer">Reviews use your saved Gemini API settings. Another model’s review is not independent fact verification.</p>
 </main></body></html>

@@ -165,3 +165,35 @@ test('closing the panel aborts its API request and prevents late results from ap
   assert.equal(f.session.review.phase,'cancelled');
   await finish(f);assert.equal(f.session.review.phase,'cancelled');assert.equal(f.requests.length,1);
 });
+
+test('error recovery preserves selected context but requires a fresh explicit Send',async()=>{
+  const f=fixture();const id=await prepare(f,{...capture,history:[{role:'user',text:'Selected context'},{role:'assistant',text:'Omitted context'}]});
+  await f.send({type:'SEND_REVIEW',id,selected:[0]});await finish(f,0,undefined,429);
+  assert.equal(await f.send({type:'EDIT_REVIEW',id},f.chat),null);
+  assert.equal(await f.send({type:'EDIT_REVIEW',id},f.options),null);
+  assert.equal((await f.send({type:'EDIT_REVIEW',id})).ok,true);
+  const next=f.session.review.id;
+  assert.notEqual(next,id);assert.equal(f.session.review.phase,'preview');
+  assert.deepEqual([...f.session.review.selected],[0]);assert.equal(f.session.review.context.reply,'323');
+  assert.equal(f.session.review.error,undefined);assert.equal(f.requests.length,1);
+  assert.ok((await f.send({type:'API_REVIEW_RESULT',id,raw:JSON.stringify(valid)})).error);
+  assert.ok((await f.send({type:'EDIT_REVIEW',id})).error);
+  assert.equal(f.session.review.id,next);assert.equal(f.requests.length,1);
+  await f.send({type:'SEND_REVIEW',id:next,selected:[0]});
+  assert.equal(f.requests.length,2);assert.ok(!f.requests[1].options.body.includes('Omitted context'));
+  await finish(f,1);assert.equal(f.session.review.phase,'done');
+});
+
+test('Review again reopens a result, while preview, waiting, and cancelled states reject it',async()=>{
+  const f=fixture();const id=await prepare(f);
+  assert.ok((await f.send({type:'EDIT_REVIEW',id})).error);
+  await f.send({type:'SEND_REVIEW',id,selected:[]});
+  assert.ok((await f.send({type:'EDIT_REVIEW',id})).error);
+  await finish(f);assert.equal((await f.send({type:'EDIT_REVIEW',id})).ok,true);
+  const next=f.session.review.id;
+  assert.equal(f.session.review.result,undefined);assert.equal(f.session.review.raw,undefined);
+  assert.equal(f.requests.length,1);
+  await f.send({type:'CANCEL_REVIEW',id:next});
+  assert.ok((await f.send({type:'EDIT_REVIEW',id:next})).error);
+  assert.equal(f.session.review.context,undefined);
+});

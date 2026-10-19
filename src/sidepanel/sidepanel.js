@@ -1,7 +1,10 @@
 const fields = Object.fromEntries(Object.entries(PANEL_SELECTORS).map(([key, selector]) => [key,document.querySelector(selector)]));
 let currentReview = null, selection = [], renderedKey = '', pending = false;
 let activeRequest = null;
-function status(text, error = false) { fields.status.textContent = text; fields.status.dataset.error = error; }
+function status(text, error = false) {
+  fields.status.textContent = text;
+  fields.statusBox.dataset.state = error ? 'error' : currentReview?.phase || 'empty';
+}
 function updatePrompt() {
   try {
     const prompt = buildReviewPrompt(currentReview.context, selection);
@@ -13,21 +16,43 @@ function updatePrompt() {
 function addText(parent, tag, text) { const node = document.createElement(tag); node.textContent = text; parent.append(node); return node; }
 function renderResult(review) {
   fields.result.replaceChildren();
-  if (!review.result) {
-    addText(fields.result,'h2','Gemini’s response');
-    addText(fields.result,'p','Gemini did not return the expected format. The original response is shown below.');
-    addText(fields.result,'pre',review.raw || 'No readable response.'); return;
-  }
   const result = review.result;
-  addText(fields.result,'h2',result.verdict.replaceAll('_',' '));
-  addText(fields.result,'p',result.summary);
-  for (const [heading, items] of [['Issues', result.issues.map(item => `${item.severity.toUpperCase()}: ${item.description}\nWhere: ${item.location}`)],
-    ['Missing points',result.missing_points],['Strengths',result.strengths]]) {
-    addText(fields.result,'h3',heading);
-    if (!items.length) addText(fields.result,'p','None reported.');
-    else { const list = document.createElement('ul'); for (const item of items) addText(list,'li',item); fields.result.append(list); }
+  fields.result.dataset.verdict = result?.verdict || 'unformatted';
+  if (!result) {
+    addText(fields.result,'h2','Review format unavailable');
+    addText(fields.result,'p','Gemini returned an unexpected format. You can read its original response below or review the context and try again.');
+    addText(fields.result,'pre',review.raw || 'No readable response.');
+    return;
+  }
+  const verdict = document.createElement('div'); verdict.className = 'verdict';
+  addText(verdict,'p','VERDICT').className = 'eyebrow';
+  addText(verdict,'h2',result.verdict.replaceAll('_',' '));
+  addText(verdict,'p',result.summary).className = 'review-summary';
+  fields.result.append(verdict);
+  const source = document.createElement('details'); source.className = 'review-source';
+  addText(source,'summary','Question reviewed');
+  addText(source,'p',review.context.question); fields.result.append(source);
+  const issues = document.createElement('section'); issues.className = 'review-section';
+  addText(issues,'h3',`Issues · ${result.issues.length}`);
+  if (!result.issues.length) addText(issues,'p','No issues reported.').className = 'empty-note';
+  for (const item of result.issues) {
+    const card = document.createElement('article'); card.className = 'issue-card'; card.dataset.severity = item.severity;
+    addText(card,'span',`${item.severity} severity`).className = 'severity';
+    addText(card,'p',item.description);
+    addText(card,'p','Affected part').className = 'issue-location-label';
+    addText(card,'blockquote',item.location);
+    issues.append(card);
+  }
+  fields.result.append(issues);
+  for (const [heading,items] of [['Missing points',result.missing_points],['Strengths',result.strengths]]) {
+    const section = document.createElement('section'); section.className = 'review-section';
+    addText(section,'h3',`${heading} · ${items.length}`);
+    if (!items.length) addText(section,'p','None reported.').className = 'empty-note';
+    else { const list = document.createElement('ul'); for (const item of items) addText(list,'li',item); section.append(list); }
+    fields.result.append(section);
   }
 }
+
 function render(review) {
   if (activeRequest && (review?.id !== activeRequest.id || review.phase !== 'waiting')) activeRequest.controller.abort();
   currentReview = review;
@@ -35,6 +60,9 @@ function render(review) {
   if (key === renderedKey && renderedKey) return;
   renderedKey = key;
   fields.preview.hidden = review?.phase !== 'preview'; fields.result.hidden = review?.phase !== 'done';
+  fields.progress.hidden = review?.phase !== 'waiting';
+  fields.retry.hidden = !review || !['done','error'].includes(review.phase) || !review.context;
+  fields.retry.textContent = review?.phase === 'error' ? 'Review context & retry' : 'Review again';
   fields.cancel.hidden = !review || ['cancelled','done','error'].includes(review.phase);
   fields.cancel.textContent = review?.phase === 'preview' ? 'Cancel' : 'Stop waiting';
   if (!review) { status('Choose Cross-check below an answer in ChatGPT.'); return; }
@@ -76,7 +104,7 @@ function runReview(id, prompt) {
 }
 async function action(type, extra={}) {
   if (pending || !currentReview) return;
-  pending = true; fields.send.disabled = true;
+  pending = true; fields.send.disabled = true; fields.retry.disabled = true; fields.cancel.disabled = true;
   try {
     const response = await chrome.runtime.sendMessage({type,id:currentReview.id,...extra});
     if (response?.error) { status(response.error,true); return; }
@@ -84,11 +112,12 @@ async function action(type, extra={}) {
     if (type === 'CANCEL_REVIEW') activeRequest?.controller.abort();
     renderedKey = '';
   } catch { status('The extension stopped responding. Reopen this panel before trying again.',true); }
-  finally { pending = false; if (currentReview.phase === 'preview') updatePrompt(); }
+  finally { pending = false; fields.retry.disabled = false; fields.cancel.disabled = false; if (currentReview?.phase === 'preview') updatePrompt(); }
   await refresh();
 }
 fields.send.addEventListener('click',()=>action('SEND_REVIEW',{selected:selection}));
 fields.cancel.addEventListener('click',()=>action('CANCEL_REVIEW'));
+fields.retry.addEventListener('click',()=>action('EDIT_REVIEW'));
 chrome.storage.onChanged.addListener((changes,area) => { if (area === 'session' && changes.review) refresh(); });
 const poll = setInterval(refresh,2000);
 window.addEventListener('pagehide',()=>{
