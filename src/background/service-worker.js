@@ -18,7 +18,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       try {
         if (!await storageReady) throw new Error("Storage unavailable");
         // This fixed prompt contains no conversation data or message payload.
-        await generateGeminiText("Reply with exactly OK.", 2048);
+        await generateGeminiText("Reply with exactly OK.", {maxOutputTokens: 1024, connectionTest: true});
         sendResponse({ok: true});
       } catch (error) {
         sendResponse({error: error instanceof GeminiError ? error.message

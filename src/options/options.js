@@ -92,13 +92,23 @@ fields.testConnection.addEventListener("click", async () => {
   }
   fields.fieldset.disabled = true;
   setStatus("Testing Gemini with a small test prompt…", "pending");
+  let timeout;
   try {
-    const response = await chrome.runtime.sendMessage({type: "TEST_GEMINI_CONNECTION"});
+    // A stopped worker may never answer. Always let the user recover the form.
+    const response = await Promise.race([
+      chrome.runtime.sendMessage({type: "TEST_GEMINI_CONNECTION"}),
+      new Promise(resolve => {
+        timeout = setTimeout(() => resolve({error:
+          "The extension did not finish the test. Reload it at chrome://extensions, reopen Settings, and try again."
+        }), 35000);
+      }),
+    ]);
     if (response?.ok === true) setStatus("Connected to Gemini. No conversation content was sent.");
     else setStatus(typeof response?.error === "string" ? response.error : "Connection test failed. Try again.", "error");
   } catch {
     setStatus("Could not contact the extension. Reload it and try again.", "error");
   } finally {
+    clearTimeout(timeout);
     fields.fieldset.disabled = false;
   }
 });
