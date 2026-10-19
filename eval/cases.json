@@ -1,0 +1,548 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "fact-01",
+      "category": "correct_fact",
+      "question": "What is the capital of France?",
+      "answer": "Paris is the capital of France.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "fact-01-claim-1",
+            "quote": "Paris is the capital of France.",
+            "start": 0,
+            "end": 31,
+            "is_wrong": false,
+            "explanation": "The capital of France is Paris.",
+            "accepted_quotes": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "fact-02",
+      "category": "correct_fact",
+      "question": "What is the capital of Australia?",
+      "answer": "Canberra is the capital of Australia.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "fact-02-claim-1",
+            "quote": "Canberra is the capital of Australia.",
+            "start": 0,
+            "end": 37,
+            "is_wrong": false,
+            "explanation": "Canberra, not Sydney, is the national capital.",
+            "accepted_quotes": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "fact-03",
+      "category": "correct_fact",
+      "question": "What atoms make up one water molecule?",
+      "answer": "A water molecule contains two hydrogen atoms and one oxygen atom.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "fact-03-claim-1",
+            "quote": "two hydrogen atoms",
+            "start": 26,
+            "end": 44,
+            "is_wrong": false,
+            "explanation": "The H2 in H2O denotes two hydrogen atoms.",
+            "accepted_quotes": []
+          },
+          {
+            "id": "fact-03-claim-2",
+            "quote": "one oxygen atom",
+            "start": 49,
+            "end": 64,
+            "is_wrong": false,
+            "explanation": "The O in H2O denotes one oxygen atom.",
+            "accepted_quotes": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "fact-04",
+      "category": "correct_fact",
+      "question": "Which planet is fourth from the Sun?",
+      "answer": "Mars is the fourth planet from the Sun.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "fact-04-claim-1",
+            "quote": "Mars is the fourth planet from the Sun.",
+            "start": 0,
+            "end": 39,
+            "is_wrong": false,
+            "explanation": "The order begins Mercury, Venus, Earth, Mars.",
+            "accepted_quotes": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "fact-05",
+      "category": "correct_fact",
+      "question": "How many meters are in one kilometer?",
+      "answer": "One kilometer equals 1,000 meters.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "fact-05-claim-1",
+            "quote": "One kilometer equals 1,000 meters.",
+            "start": 0,
+            "end": 34,
+            "is_wrong": false,
+            "explanation": "The SI prefix kilo denotes a factor of 1000.",
+            "accepted_quotes": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "fact-06",
+      "category": "correct_fact",
+      "question": "What base does binary use?",
+      "answer": "Binary is a base-2 numeral system.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "fact-06-claim-1",
+            "quote": "Binary is a base-2 numeral system.",
+            "start": 0,
+            "end": 34,
+            "is_wrong": false,
+            "explanation": "Binary positional notation has base two.",
+            "accepted_quotes": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "error-01",
+      "category": "planted_fact",
+      "question": "What are the capitals of Australia and France?",
+      "answer": "Sydney is the capital of Australia. Paris is the capital of France.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "error-01-claim-1",
+            "quote": "Sydney is the capital of Australia.",
+            "start": 0,
+            "end": 35,
+            "is_wrong": true,
+            "explanation": "Canberra is the capital of Australia.",
+            "accepted_quotes": []
+          },
+          {
+            "id": "error-01-claim-2",
+            "quote": "Paris is the capital of France.",
+            "start": 36,
+            "end": 67,
+            "is_wrong": false,
+            "explanation": "Paris is the capital of France.",
+            "accepted_quotes": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "error-02",
+      "category": "planted_fact",
+      "question": "What are the capitals of Canada and Japan?",
+      "answer": "Toronto is the capital of Canada. Tokyo is the capital of Japan.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "error-02-claim-1",
+            "quote": "Toronto is the capital of Canada.",
+            "start": 0,
+            "end": 33,
+            "is_wrong": true,
+            "explanation": "Ottawa is the capital of Canada.",
+            "accepted_quotes": []
+          },
+          {
+            "id": "error-02-claim-2",
+            "quote": "Tokyo is the capital of Japan.",
+            "start": 34,
+            "end": 64,
+            "is_wrong": false,
+            "explanation": "Tokyo is the capital of Japan.",
+            "accepted_quotes": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "error-03",
+      "category": "planted_fact",
+      "question": "What is the chemical formula of water?",
+      "answer": "The chemical formula of water is H3O.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "error-03-claim-1",
+            "quote": "The chemical formula of water is H3O.",
+            "start": 0,
+            "end": 37,
+            "is_wrong": true,
+            "explanation": "Water is H2O; hydronium is H3O+ and is a different species.",
+            "accepted_quotes": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "error-04",
+      "category": "planted_fact",
+      "question": "Where are Earth and Mars in order from the Sun?",
+      "answer": "Earth is the third planet from the Sun. Mars is the second planet from the Sun.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "error-04-claim-1",
+            "quote": "Earth is the third planet from the Sun.",
+            "start": 0,
+            "end": 39,
+            "is_wrong": false,
+            "explanation": "Earth follows Mercury and Venus.",
+            "accepted_quotes": []
+          },
+          {
+            "id": "error-04-claim-2",
+            "quote": "Mars is the second planet from the Sun.",
+            "start": 40,
+            "end": 79,
+            "is_wrong": true,
+            "explanation": "Mars is fourth; Venus is second.",
+            "accepted_quotes": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "error-05",
+      "category": "planted_fact",
+      "question": "What is the largest planet in our Solar System?",
+      "answer": "Mercury is the largest planet in our Solar System.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "error-05-claim-1",
+            "quote": "Mercury is the largest planet in our Solar System.",
+            "start": 0,
+            "end": 50,
+            "is_wrong": true,
+            "explanation": "Jupiter is the largest planet; Mercury is the smallest of the eight planets.",
+            "accepted_quotes": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "error-06",
+      "category": "planted_fact",
+      "question": "Are the Sun and Earth planets?",
+      "answer": "The Sun is a planet. Earth is a planet.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "error-06-claim-1",
+            "quote": "The Sun is a planet.",
+            "start": 0,
+            "end": 20,
+            "is_wrong": true,
+            "explanation": "The Sun is a star.",
+            "accepted_quotes": []
+          },
+          {
+            "id": "error-06-claim-2",
+            "quote": "Earth is a planet.",
+            "start": 21,
+            "end": 39,
+            "is_wrong": false,
+            "explanation": "Earth is one of the eight Solar System planets.",
+            "accepted_quotes": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "math-01",
+      "category": "correct_math",
+      "question": "What is 17 multiplied by 19?",
+      "answer": "17 × 19 = 323.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "math-01-claim-1",
+            "quote": "17 × 19 = 323.",
+            "start": 0,
+            "end": 14,
+            "is_wrong": false,
+            "explanation": "17 × (20 - 1) = 340 - 17 = 323.",
+            "accepted_quotes": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "math-02",
+      "category": "wrong_math",
+      "question": "What is 17 multiplied by 19?",
+      "answer": "17 × 19 = 333.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "math-02-claim-1",
+            "quote": "17 × 19 = 333.",
+            "start": 0,
+            "end": 14,
+            "is_wrong": true,
+            "explanation": "17 × 19 is 323, not 333.",
+            "accepted_quotes": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "math-03",
+      "category": "correct_math",
+      "question": "What is the arithmetic mean of 2, 4, and 6?",
+      "answer": "The arithmetic mean of 2, 4, and 6 is 4.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "math-03-claim-1",
+            "quote": "The arithmetic mean of 2, 4, and 6 is 4.",
+            "start": 0,
+            "end": 40,
+            "is_wrong": false,
+            "explanation": "(2 + 4 + 6) / 3 = 12 / 3 = 4.",
+            "accepted_quotes": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "math-04",
+      "category": "wrong_math",
+      "question": "What is the arithmetic mean of 2, 4, and 6?",
+      "answer": "The arithmetic mean of 2, 4, and 6 is 5.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "math-04-claim-1",
+            "quote": "The arithmetic mean of 2, 4, and 6 is 5.",
+            "start": 0,
+            "end": 40,
+            "is_wrong": true,
+            "explanation": "The sum is 12 and there are three numbers, so the mean is 4.",
+            "accepted_quotes": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "math-05",
+      "category": "wrong_math",
+      "question": "Compute 1/2 + 1/3.",
+      "answer": "1/2 + 1/3 = 2/5.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "math-05-claim-1",
+            "quote": "1/2 + 1/3 = 2/5.",
+            "start": 0,
+            "end": 16,
+            "is_wrong": true,
+            "explanation": "A common denominator gives 3/6 + 2/6 = 5/6.",
+            "accepted_quotes": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "math-06",
+      "category": "wrong_math",
+      "question": "What is the area of a rectangle of width 4 cm and height 5 cm?",
+      "answer": "The area is 18 cm².",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "math-06-claim-1",
+            "quote": "The area is 18 cm².",
+            "start": 0,
+            "end": 19,
+            "is_wrong": true,
+            "explanation": "Area is width times height: 4 × 5 = 20 cm². Eighteen is its perimeter in cm.",
+            "accepted_quotes": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "code-01",
+      "category": "correct_code",
+      "question": "Write a Python function that squares any integer.",
+      "answer": "```python\ndef square(n):\n    return n * n\n```\nThis function returns the square of any integer.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "code-01-claim-1",
+            "quote": "This function returns the square of any integer.",
+            "start": 46,
+            "end": 94,
+            "is_wrong": false,
+            "explanation": "For Python integers n, multiplication n*n computes the square.",
+            "accepted_quotes": [
+              "return n * n"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "code-02",
+      "category": "correct_code",
+      "question": "Write a Python function that tests whether an integer is even.",
+      "answer": "```python\ndef is_even(n):\n    return n % 2 == 0\n```\nThis returns True exactly when the integer is even.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "code-02-claim-1",
+            "quote": "This returns True exactly when the integer is even.",
+            "start": 52,
+            "end": 103,
+            "is_wrong": false,
+            "explanation": "Even integers, including negative even integers and zero, have remainder zero modulo two.",
+            "accepted_quotes": [
+              "return n % 2 == 0"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "code-03",
+      "category": "buggy_code",
+      "question": "Write a Python function that tests whether an integer is even.",
+      "answer": "```python\ndef is_even(n):\n    return n % 2 == 1\n```\nThis returns True exactly when the integer is even.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "code-03-claim-1",
+            "quote": "This returns True exactly when the integer is even.",
+            "start": 52,
+            "end": 103,
+            "is_wrong": true,
+            "explanation": "For n=2 the function returns False; for n=3 it returns True. It tests oddness.",
+            "accepted_quotes": [
+              "return n % 2 == 1"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "code-04",
+      "category": "buggy_code",
+      "question": "Return the last element of a nonempty Python list.",
+      "answer": "```python\ndef last(items):\n    return items[len(items)]\n```\nThis returns the last element of any nonempty list.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "code-04-claim-1",
+            "quote": "This returns the last element of any nonempty list.",
+            "start": 60,
+            "end": 111,
+            "is_wrong": true,
+            "explanation": "The last valid nonnegative index is len(items)-1; len(items) raises IndexError.",
+            "accepted_quotes": [
+              "return items[len(items)]"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "code-05",
+      "category": "buggy_code",
+      "question": "Write a Python function that returns a new sorted list of the input numbers.",
+      "answer": "```python\ndef sorted_copy(numbers):\n    return numbers.sort()\n```\nThis returns a new sorted list. The input list remains unchanged.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "code-05-claim-1",
+            "quote": "This returns a new sorted list.",
+            "start": 66,
+            "end": 97,
+            "is_wrong": true,
+            "explanation": "list.sort() returns None, not a new list.",
+            "accepted_quotes": [
+              "return numbers.sort()"
+            ]
+          },
+          {
+            "id": "code-05-claim-2",
+            "quote": "The input list remains unchanged.",
+            "start": 98,
+            "end": 131,
+            "is_wrong": true,
+            "explanation": "list.sort() mutates the list when its order needs changing; for example [2,1].",
+            "accepted_quotes": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "code-06",
+      "category": "buggy_code",
+      "question": "Write a Python function returning the largest number in a nonempty list, including negative numbers.",
+      "answer": "```python\ndef largest(values):\n    best = 0\n    for value in values:\n        if value > best:\n            best = value\n    return best\n```\nThis returns the largest value for every nonempty list of integers.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "code-06-claim-1",
+            "quote": "This returns the largest value for every nonempty list of integers.",
+            "start": 139,
+            "end": 206,
+            "is_wrong": true,
+            "explanation": "For [-5,-2], it returns 0 instead of -2. Initialize best from the first element.",
+            "accepted_quotes": [
+              "best = 0"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "code-07",
+      "category": "buggy_code",
+      "question": "Write a Python function that sums all integers from 1 through n inclusive, for positive n.",
+      "answer": "```python\ndef sum_to(n):\n    return sum(range(1, n))\n```\nThis includes n in the sum.",
+      "ground_truth": {
+        "claims": [
+          {
+            "id": "code-07-claim-1",
+            "quote": "This includes n in the sum.",
+            "start": 57,
+            "end": 84,
+            "is_wrong": true,
+            "explanation": "range excludes its stop argument; for n=3 the code returns 3 instead of 6.",
+            "accepted_quotes": [
+              "return sum(range(1, n))"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
