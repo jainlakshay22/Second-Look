@@ -1,0 +1,24 @@
+.second-look-cross-check {
+  display: block;
+  align-self: flex-start;
+  width: fit-content;
+  margin-top: 12px;
+  padding: 6px 12px;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.second-look-cross-check:hover {
+  background: rgba(128, 128, 128, 0.15);
+}
+
+.second-look-cross-check:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}

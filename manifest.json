@@ -9,9 +9,17 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://chatgpt.com/*"],
-      "js": ["selectors.js", "content.js"],
-      "run_at": "document_idle"
+      "matches": [
+        "https://chatgpt.com/*"
+      ],
+      "js": [
+        "selectors.js",
+        "content.js"
+      ],
+      "run_at": "document_idle",
+      "css": [
+        "content.css"
+      ]
     }
   ]
 }
