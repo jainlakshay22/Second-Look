@@ -1,5 +1,9 @@
 console.log("extension loaded");
 
+// Only the latest capture is retained, in this extension's isolated script memory.
+// No storage, page events, or network requests are used for the capture.
+let lastCapturedContext = null;
+
 // Query each time: ChatGPT can add or replace messages without a page reload.
 function findAssistantReplies() {
   return Array.from(
@@ -27,10 +31,26 @@ function injectCrossCheckButtons() {
       button.textContent = "Cross-check";
       button.className = "second-look-cross-check";
       button.setAttribute("data-second-look-button", "");
-      button.title = "Cross-check this reply (review coming soon)";
+      button.title = "Capture this reply and recent conversation locally";
       button.addEventListener("click", () => {
-        // Context capture is the next step; no conversation text is logged.
-        console.log("[Second Look] Cross-check clicked. Review coming soon.");
+        lastCapturedContext = null;
+        try {
+          lastCapturedContext = captureContext(reply);
+          button.textContent = "Captured locally";
+          button.title = "Context captured locally. Nothing has been sent.";
+          // Log counts only; inspect lastCapturedContext explicitly in the
+          // extension's DevTools context when debugging the captured object.
+          console.log("[Second Look] Context captured locally", {
+            questionCharacters: lastCapturedContext.question.length,
+            replyCharacters: lastCapturedContext.reply.length,
+            historyMessages: lastCapturedContext.history.length,
+          });
+        } catch (error) {
+          button.textContent = "Capture failed";
+          button.title = error.message;
+          console.warn("[Second Look] " + error.message);
+        }
+        setTimeout(() => { button.textContent = "Cross-check"; }, 2000);
       });
       reply.append(button);
     }
