@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "ChatGPT Cross-check",
+  "version": "0.1.0",
+  "description": "ChatGPT Cross-check starter extension with a hello popup.",
+  "action": {
+    "default_title": "ChatGPT Cross-check",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://chatgpt.com/*"],
+      "js": ["selectors.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
