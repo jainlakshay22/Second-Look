@@ -11,6 +11,9 @@
 </div>
 <section id="preview" hidden>
   <h2>Review before sending</h2><p class="help">Only the prompt below is sent to the Gemini API using your saved key. API usage and quota apply.</p>
+  <label for="review-mode">Mode</label>
+  <select id="review-mode" aria-describedby="grounding-notice"><option value="review">Review</option><option value="verify_claims">Verify claims</option></select>
+  <p id="grounding-notice" class="help" hidden>Google Search may generate queries from the selected text and may incur additional charges.</p>
   <h3>Question</h3><pre id="question"></pre><h3>Answer to review</h3><pre id="answer"></pre>
   <h3>Earlier context</h3><p class="help">Relevant recent messages are suggested locally. Check the selection: the extension cannot guarantee it found every dependency.</p><div id="history"></div>
   <details><summary>Exact prompt to send</summary><pre id="prompt"></pre></details><p id="size" class="help"></p>

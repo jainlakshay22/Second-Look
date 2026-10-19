@@ -114,6 +114,7 @@ test('safe answer rendering colors each verdict and click exposes explanation an
   assert.match(details.textContent,/Reason <img/);
   const links=nodes(details).filter(n=>n.tag==='a');
   assert.equal(links.length,1);assert.equal(links[0].href,'https://example.com/evidence');
+  assert.equal(links[0].textContent,'example.com');
   assert.equal(links[0].rel,'noopener noreferrer');assert.equal(links[0].target,'_blank');
   assert.equal(buttons[0].attributes['aria-pressed'],'true');
   assert.equal(buttons[0].attributes['aria-controls'],details.id);

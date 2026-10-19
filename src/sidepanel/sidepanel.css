@@ -87,3 +87,6 @@ button.claim-highlight { display: inline; padding: 0; border: 0; border-radius: 
 .claim-card[data-verdict=supported] { border-left: 3px solid #39724d; }
 .claim-card[data-verdict=contradicted] { border-left: 3px solid #a23c36; }
 .claim-card[data-verdict=unverified] { border-left: 3px solid #a57b27; }
+
+#review-mode { width: 100%; margin: 6px 0 12px; padding: 10px; font: inherit; color: var(--ink); background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+#grounding-notice { border-left: 3px solid #a57b27; padding: 8px 12px; background: #fff5e2; }

@@ -28,5 +28,5 @@ const SETTINGS_SELECTORS = Object.freeze({
 
 const PANEL_SELECTORS = Object.freeze({
   status:'#status', statusBox:'#status-box', progress:'#progress', retry:'#retry', preview:'#preview', question:'#question', answer:'#answer',
-  history:'#history', prompt:'#prompt', size:'#size', send:'#send', cancel:'#cancel', result:'#result',
+  mode:'#review-mode', groundingNotice:'#grounding-notice', history:'#history', prompt:'#prompt', size:'#size', send:'#send', cancel:'#cancel', result:'#result',
 });

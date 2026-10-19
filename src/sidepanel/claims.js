@@ -39,7 +39,7 @@ function matchClaimQuotes(answer, claims) {
   return {segments, unmatched};
 }
 
-function renderClaimResult(parent, answer, result) {
+function renderClaimResult(parent, answer, result, grounding = {}) {
   const text = (container, tag, value, className) => {
     const node = document.createElement(tag);
     node.textContent = value;
@@ -56,6 +56,15 @@ function renderClaimResult(parent, answer, result) {
       return ['http:','https:'].includes(url.protocol) && Boolean(url.hostname) && !url.username && !url.password;
     } catch { return false; }
   };
+  const sourceTitles = new Map();
+  for (const entry of grounding.metadata || []) {
+    for (const chunk of Array.isArray(entry.groundingChunks) ? entry.groundingChunks : []) {
+      if (safeSource(chunk?.web?.uri) && typeof chunk.web.title === 'string' && chunk.web.title.trim()) {
+        const title = chunk.web.title.trim().slice(0,300);
+        sourceTitles.set(chunk.web.uri, safeSource(title) ? new URL(title).hostname : title);
+      }
+    }
+  }
   function claimCard(container, claim, index) {
     const card = document.createElement('article'); card.className = 'claim-card';
     card.dataset.verdict = verdictOf(claim);
@@ -67,7 +76,8 @@ function renderClaimResult(parent, answer, result) {
       const list = document.createElement('ul'); list.className = 'claim-sources';
       for (const url of sources) {
         const item = document.createElement('li');
-        const link = text(item, 'a', url);
+        const link = text(item, 'a', sourceTitles.get(url) || new URL(url).hostname.replace(/^www\./, ''));
+        link.title = url;
         link.href = url; link.target = '_blank'; link.rel = 'noopener noreferrer';
         list.append(item);
       }

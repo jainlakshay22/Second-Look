@@ -7,7 +7,8 @@ function status(text, error = false) {
 }
 function updatePrompt() {
   try {
-    const prompt = buildReviewPrompt(currentReview.context, selection);
+    const prompt = buildReviewPrompt(currentReview.context, selection, {mode:currentReview.mode || 'review',groundingEnabled:currentReview.groundingEnabled});
+    fields.groundingNotice.hidden = currentReview.mode !== 'verify_claims' || !currentReview.groundingEnabled;
     fields.prompt.textContent = prompt;
     fields.size.textContent = `${prompt.length.toLocaleString()} / ${REVIEW_LIMIT.toLocaleString()} characters. Long captured messages are marked [Truncated].`;
     fields.send.disabled = pending || prompt.length > REVIEW_LIMIT;
@@ -16,7 +17,7 @@ function updatePrompt() {
 function addText(parent, tag, text) { const node = document.createElement(tag); node.textContent = text; parent.append(node); return node; }
 function renderResult(review) {
   fields.result.replaceChildren();
-  const result = review.result;
+  const result = review.mode === 'verify_claims' ? review.result?.review : review.result;
   fields.result.dataset.verdict = result?.verdict || 'unformatted';
   if (!result) {
     addText(fields.result,'h2','Review format unavailable');
@@ -26,7 +27,7 @@ function renderResult(review) {
   }
   if (Array.isArray(result.claims)) {
     fields.result.dataset.verdict = 'claims';
-    renderClaimResult(fields.result, review.context.reply, result);
+    renderClaimResult(fields.result, review.context.reply, result, review.result?.grounding);
     return;
   }
   const verdict = document.createElement('div'); verdict.className = 'verdict';
@@ -60,8 +61,9 @@ function renderResult(review) {
 
 function render(review) {
   if (activeRequest && (review?.id !== activeRequest.id || review.phase !== 'waiting')) activeRequest.controller.abort();
+  const preserveSelection = currentReview?.id === review?.id && currentReview?.phase === 'preview' && review?.phase === 'preview';
   currentReview = review;
-  const key = review ? `${review.id}:${review.phase}:${review.error || ''}` : '';
+  const key = review ? `${review.id}:${review.phase}:${review.mode || 'review'}:${review.groundingEnabled}:${review.error || ''}` : '';
   if (key === renderedKey && renderedKey) return;
   renderedKey = key;
   fields.preview.hidden = review?.phase !== 'preview'; fields.result.hidden = review?.phase !== 'done';
@@ -73,7 +75,8 @@ function render(review) {
   if (!review) { status('Choose Cross-check below an answer in ChatGPT.'); return; }
   if (review.phase === 'preview') {
     status('Nothing has been sent. Choose the context, then confirm.');
-    selection = [...review.selected];
+    if (!preserveSelection) selection = [...review.selected];
+    fields.mode.value = review.mode || 'review';
     fields.question.textContent = review.context.question; fields.answer.textContent = review.context.reply;
     fields.history.replaceChildren();
     if (!review.context.history.length) addText(fields.history,'p','No earlier messages captured.');
@@ -95,11 +98,16 @@ async function refresh() {
   try { const response = await chrome.runtime.sendMessage({type:'GET_REVIEW'}); if (response?.error) status(response.error,true); else render(response.review); }
   catch { status('Reload the extension and reopen this panel.',true); }
 }
-function runReview(id, prompt) {
+function runReview(id, prompt, approved = {}) {
   const job = {id, controller:new AbortController()};
   activeRequest = job;
-  generateGeminiText(prompt,{maxOutputTokens:8192,schema:REVIEW_RESPONSE_SCHEMA,signal:job.controller.signal,headerTimeout:90000})
-    .then(raw => chrome.runtime.sendMessage({type:'API_REVIEW_RESULT',id,raw}), error => {
+  const options = {maxOutputTokens:8192,signal:job.controller.signal,headerTimeout:90000};
+  const request = approved.mode === 'verify_claims'
+    ? generateGeminiReview(approved.context,approved.selected,{
+      ...options,mode:approved.mode,groundingEnabled:approved.groundingEnabled,approvedPrompt:prompt,
+    }).then(result => ({result}))
+    : generateGeminiText(prompt,{...options,schema:REVIEW_RESPONSE_SCHEMA}).then(raw => ({raw}));
+  request.then(payload => chrome.runtime.sendMessage({type:'API_REVIEW_RESULT',id,...payload}), error => {
       if (job.controller.signal.aborted) return;
       return chrome.runtime.sendMessage({type:'API_REVIEW_ERROR',id,error:error instanceof GeminiError
         ? error.message : 'The review failed. Cross-check the answer again to retry.'});
@@ -109,21 +117,24 @@ function runReview(id, prompt) {
 }
 async function action(type, extra={}) {
   if (pending || !currentReview) return;
-  pending = true; fields.send.disabled = true; fields.retry.disabled = true; fields.cancel.disabled = true;
+  pending = true; fields.mode.disabled = true; fields.send.disabled = true; fields.retry.disabled = true; fields.cancel.disabled = true;
   try {
     const response = await chrome.runtime.sendMessage({type,id:currentReview.id,...extra});
     if (response?.error) { status(response.error,true); return; }
-    if (type === 'SEND_REVIEW' && response?.ok && response.id && typeof response.prompt === 'string') runReview(response.id,response.prompt);
+    if (type === 'SEND_REVIEW' && response?.ok && response.id && typeof response.prompt === 'string') runReview(response.id,response.prompt,response);
     if (type === 'CANCEL_REVIEW') activeRequest?.controller.abort();
     renderedKey = '';
   } catch { status('The extension stopped responding. Reopen this panel before trying again.',true); }
-  finally { pending = false; fields.retry.disabled = false; fields.cancel.disabled = false; if (currentReview?.phase === 'preview') updatePrompt(); }
+  finally { pending = false; fields.mode.disabled = false; fields.retry.disabled = false; fields.cancel.disabled = false; if (currentReview?.phase === 'preview') updatePrompt(); }
   await refresh();
 }
-fields.send.addEventListener('click',()=>action('SEND_REVIEW',{selected:selection}));
+fields.mode.addEventListener('change',()=>action('SET_REVIEW_MODE',{mode:fields.mode.value,selected:selection}));
+fields.send.addEventListener('click',()=>action('SEND_REVIEW',{
+  selected:selection,mode:currentReview?.mode || 'review',groundingEnabled:currentReview?.groundingEnabled,
+}));
 fields.cancel.addEventListener('click',()=>action('CANCEL_REVIEW'));
 fields.retry.addEventListener('click',()=>action('EDIT_REVIEW'));
-chrome.storage.onChanged.addListener((changes,area) => { if (area === 'session' && changes.review) refresh(); });
+chrome.storage.onChanged.addListener((changes,area) => { if ((area === 'session' && changes.review) || (area === 'local' && changes.groundingEnabled)) refresh(); });
 const poll = setInterval(refresh,2000);
 window.addEventListener('pagehide',()=>{
   clearInterval(poll);

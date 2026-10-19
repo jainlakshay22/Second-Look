@@ -21,6 +21,11 @@ async function current() {
     await chrome.storage.session.remove('review');
     return null;
   }
+  if (review?.phase === 'preview') {
+    const stored = await chrome.storage.local.get({groundingEnabled: SETTINGS_DEFAULTS.groundingEnabled});
+    const enabled = stored.groundingEnabled === true;
+    if (review.groundingEnabled !== enabled) { review.groundingEnabled = enabled; await save(review); }
+  }
   if (review?.phase === 'waiting' && Date.now() > review.deadline) {
     review.phase = 'error';
     review.error = 'The review was interrupted or timed out. Cross-check the answer again to retry. Nothing was resubmitted automatically.';
@@ -52,7 +57,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     return true;
   }
   const allowed = (chat && ['OPEN_PREVIEW','CAPTURE_REVIEW','GET_CAPTURE_SETTINGS'].includes(message.type))
-    || (panel && ['GET_REVIEW','SEND_REVIEW','EDIT_REVIEW','CANCEL_REVIEW','API_REVIEW_RESULT','API_REVIEW_ERROR'].includes(message.type));
+    || (panel && ['GET_REVIEW','SET_REVIEW_MODE','SEND_REVIEW','EDIT_REVIEW','CANCEL_REVIEW','API_REVIEW_RESULT','API_REVIEW_ERROR'].includes(message.type));
   if (!allowed) return false;
   // Chrome must see sidePanel.open directly in the original click's event handler.
   const opened = message.type === 'OPEN_PREVIEW'
@@ -68,7 +73,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       if (review?.phase === 'waiting') return {error:'A review is already in progress. Finish it or stop it in the side panel first.'};
       if (!validContext(message.context)) return {error:'Could not read this answer. Refresh ChatGPT and try again.'};
       review = {id:crypto.randomUUID(),transport:'api',phase:'preview',context:message.context,
-        selected:suggestedHistory(message.context),createdAt:Date.now()};
+        mode:'review',selected:suggestedHistory(message.context),createdAt:Date.now()};
       await save(review); return {ok:true};
     }
     if (message.type === 'GET_REVIEW') return {review};
@@ -79,20 +84,33 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       }
       // A fresh ID isolates this preview from late responses to the previous request.
       review = {id:crypto.randomUUID(),transport:'api',phase:'preview',context:review.context,
-        selected:review.selected,createdAt:Date.now()};
+        mode:review.mode || 'review',selected:review.selected,createdAt:Date.now()};
       await save(review);return {ok:true};
+    }
+    if (message.type === 'SET_REVIEW_MODE') {
+      if (review.phase !== 'preview') return {error:'The mode can only be changed before sending.'};
+      if (!['review','verify_claims'].includes(message.mode)) return {error:'Choose Review or Verify claims.'};
+      try { buildReviewPrompt(review.context, message.selected, {mode:message.mode}); }
+      catch { return {error:'The selected context is invalid. Capture the answer again.'}; }
+      review.mode = message.mode; review.selected = message.selected;
+      await save(review); return {ok:true};
     }
     if (message.type === 'SEND_REVIEW') {
       if (review.phase !== 'preview') return {error:'This review has already been sent or cancelled.'};
+      const mode = message.mode ?? review.mode ?? 'review';
+      if (!['review','verify_claims'].includes(mode)) return {error:'Choose Review or Verify claims.'};
+      if (mode === 'verify_claims' && message.groundingEnabled !== review.groundingEnabled) {
+        return {error:'Search settings changed. Review the updated preview, then send again.'};
+      }
       let prompt;
-      try { prompt = buildReviewPrompt(review.context,message.selected); }
+      try { prompt = buildReviewPrompt(review.context,message.selected,{mode,groundingEnabled:review.groundingEnabled}); }
       catch { return {error:'The selected context is invalid. Capture the answer again.'}; }
       if (prompt.length > REVIEW_LIMIT) return {error:'This prompt is too long. Deselect some earlier messages before sending.'};
       // Persist before calling Google so repeated clicks cannot create duplicate requests.
-      review = {...review,phase:'waiting',selected:message.selected,deadline:Date.now()+190000};
+      review = {...review,mode,phase:'waiting',selected:message.selected,deadline:Date.now()+190000};
       await save(review);
       // Only the confirming trusted panel receives the request. Never replay it on GET_REVIEW.
-      return {ok:true,id:review.id,prompt};
+      return {ok:true,id:review.id,prompt,mode,context:review.context,selected:review.selected,groundingEnabled:review.groundingEnabled};
     }
     if (['API_REVIEW_RESULT','API_REVIEW_ERROR'].includes(message.type)) {
       if (review.phase !== 'waiting') return {error:'This review is no longer waiting.'};
@@ -100,8 +118,24 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
         review.phase = 'error';
         review.error = typeof message.error === 'string' ? message.error.slice(0,500) : 'The review failed. Cross-check again to retry.';
       } else {
+        if (review.mode === 'verify_claims') {
+          // Revalidate against the captured answer and saved mode, never message-supplied context.
+          const raw = JSON.stringify(message.result?.review);
+          const parsed = parseReview(raw,{mode:review.mode,answer:review.context.reply});
+          const metadata = message.result?.grounding?.metadata;
+          const validMetadata = Array.isArray(metadata) && metadata.every(entry => entry && typeof entry === 'object' && !Array.isArray(entry))
+            && JSON.stringify(metadata).length <= 200000;
+          const grounding = validMetadata ? geminiResponseResult('', review.groundingEnabled ? metadata : [], review.groundingEnabled).grounding : null;
+          const sources = new Set(grounding?.sources || []);
+          if (!parsed || !grounding || !parsed.claims.every(claim => claim.sources.every(url => sources.has(url)))) {
+            review.phase = 'error'; review.error = 'Gemini returned an invalid claim review. Review the context and try again.';
+          } else {
+            review.phase = 'done'; review.result = {review:parsed,grounding};
+          }
+          await save(review); return {ok:true};
+        }
         if (typeof message.raw !== 'string' || message.raw.length > 80000) return {error:'Invalid review response.'};
-        review.phase = 'done';review.raw = message.raw;review.result = parseReview(message.raw);
+        review.phase = 'done';review.raw = message.raw;review.result = parseReview(message.raw,{mode:review.mode || 'review',answer:review.context.reply});
       }
       await save(review);return {ok:true};
     }
