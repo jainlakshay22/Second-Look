@@ -25,6 +25,7 @@ async function loadSettings() {
     fields.model.value = isGemini && isValidGeminiModel(stored.model) ? stored.model : SETTINGS_DEFAULTS.model;
     savedModel = fields.model.value;
     fields.historyCount.value = isValidHistoryCount(stored.historyCount) ? stored.historyCount : SETTINGS_DEFAULTS.historyCount;
+    fields.groundingEnabled.checked = stored.groundingEnabled === true;
     hasSavedKey = isGemini && typeof stored.apiKey === "string" && stored.apiKey.trim().length > 0;
     updateKeyStatus();
     fields.fieldset.disabled = false;
@@ -50,7 +51,7 @@ fields.form.addEventListener("submit", async (event) => {
   try {
     await restrictSettingsStorage();
     const previous = await chrome.storage.local.get({provider: SETTINGS_DEFAULTS.provider});
-    const changes = {provider, model, historyCount};
+    const changes = {provider, model, historyCount, groundingEnabled: fields.groundingEnabled.checked};
     if (apiKey) changes.apiKey = apiKey;
     // Never reuse a saved credential with a different provider.
     else if (previous.provider !== provider) changes.apiKey = "";

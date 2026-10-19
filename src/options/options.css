@@ -19,3 +19,6 @@ button:hover:not(:disabled) { filter: brightness(.92); }
 #settings-status[data-state="error"] { color: #a02020; }
 .privacy { padding-top: 16px; border-top: 1px solid #dce3dd; }
 @media (max-width: 680px) { main { margin: 16px; padding: 24px; } }
+
+.checkbox-label { display: flex; align-items: center; gap: 10px; }
+.checkbox-label input { width: auto; margin: 0; flex: none; accent-color: #244e3d; }

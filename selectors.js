@@ -19,6 +19,7 @@ const SETTINGS_SELECTORS = Object.freeze({
   model: "#model",
   apiKey: "#api-key",
   historyCount: "#history-count",
+  groundingEnabled: "#grounding-enabled",
   keyStatus: "#key-status",
   removeKey: "#remove-key",
   testConnection: "#test-connection",

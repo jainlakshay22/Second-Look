@@ -32,6 +32,11 @@
         <label for="history-count">Earlier messages to capture</label>
         <input id="history-count" type="number" min="0" max="20" step="1" required value="4" aria-describedby="history-help">
         <p id="history-help" class="help">Capture up to 0–20 earlier messages. You choose which to send in the review preview. Default: 4.</p>
+        <label class="checkbox-label" for="grounding-enabled">
+          <input id="grounding-enabled" type="checkbox" aria-describedby="grounding-help">
+          Use Google Search for claim verification
+        </label>
+        <p id="grounding-help" class="help">Off by default. Applies only to verify-claims mode; regular reviews and connection tests do not search. Requires a Gemini 3 or 4 model. Google may use review content to create search queries, and search usage may incur charges.</p>
         <div class="actions">
           <button id="save-settings" type="submit">Save settings</button>
           <button id="test-connection" type="button" class="secondary" aria-describedby="connection-help">Test connection</button>
