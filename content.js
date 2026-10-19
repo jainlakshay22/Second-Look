@@ -4,7 +4,10 @@ console.log("extension loaded");
 function findAssistantReplies() {
   return Array.from(
     document.querySelectorAll(CROSS_CHECK_SELECTORS.assistantReply)
-  );
+  ).filter((reply) => {
+    // A reply can match both layouts; keep only the outermost wrapper.
+    return !reply.parentElement?.closest(CROSS_CHECK_SELECTORS.assistantReply);
+  });
 }
 
 function injectCrossCheckButtons() {
@@ -57,7 +60,11 @@ function refreshCrossCheckButtons() {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ["data-message-author-role"],
+      attributeFilter: [
+        "data-message-author-role",
+        "data-conversation-role",
+        "data-content-search-unit-key",
+      ],
     });
   }
 }
