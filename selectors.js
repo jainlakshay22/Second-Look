@@ -10,3 +10,16 @@ const CROSS_CHECK_SELECTORS = Object.freeze({
   nonMessageContent: 'button, [role="button"], [role="toolbar"], [data-second-look-button], [data-conversation-role], .sr-only, [hidden], [aria-hidden="true"], script, style, svg',
   crossCheckButton: '[data-second-look-button]',
 });
+
+// Selectors for the extension's settings page also stay in this file.
+const SETTINGS_SELECTORS = Object.freeze({
+  form: "#settings-form",
+  fieldset: "#settings-fields",
+  provider: "#provider",
+  model: "#model",
+  apiKey: "#api-key",
+  historyCount: "#history-count",
+  keyStatus: "#key-status",
+  removeKey: "#remove-key",
+  status: "#settings-status",
+});

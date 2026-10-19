@@ -32,10 +32,22 @@ function injectCrossCheckButtons() {
       button.className = "second-look-cross-check";
       button.setAttribute("data-second-look-button", "");
       button.title = "Capture this reply and recent conversation locally";
-      button.addEventListener("click", () => {
+      button.addEventListener("click", async () => {
         lastCapturedContext = null;
+        button.disabled = true;
         try {
-          lastCapturedContext = captureContext(reply);
+          // Ask the worker only for non-secret capture settings.
+          let settings;
+          try {
+            settings = await chrome.runtime.sendMessage({type: "GET_CAPTURE_SETTINGS"});
+          } catch {
+            throw new Error("Could not read settings. Reload the extension and refresh ChatGPT.");
+          }
+          if (!settings || settings.error || !Number.isInteger(settings.historyCount)
+              || settings.historyCount < 0 || settings.historyCount > 20) {
+            throw new Error("Could not read settings. Reload the extension and refresh ChatGPT.");
+          }
+          lastCapturedContext = captureContext(reply, settings.historyCount);
           button.textContent = "Captured locally";
           button.title = "Context captured locally. Nothing has been sent.";
           // Log counts only; inspect lastCapturedContext explicitly in the
@@ -49,6 +61,8 @@ function injectCrossCheckButtons() {
           button.textContent = "Capture failed";
           button.title = error.message;
           console.warn("[Second Look] " + error.message);
+        } finally {
+          button.disabled = false;
         }
         setTimeout(() => { button.textContent = "Cross-check"; }, 2000);
       });

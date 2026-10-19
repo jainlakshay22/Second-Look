@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Second Look · Settings</title>
+  <link rel="stylesheet" href="options.css">
+  <script defer src="../../selectors.js"></script>
+  <script defer src="../shared/settings.js"></script>
+  <script defer src="options.js"></script>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">SECOND LOOK</p>
+    <h1>Your second opinion, your settings.</h1>
+    <p class="intro">Choose the provider and model you want to review your answers.</p>
+    <form id="settings-form">
+      <fieldset id="settings-fields" disabled>
+        <legend>Reviewer settings</legend>
+        <label for="provider">Provider</label>
+        <select id="provider" required>
+          <option value="">Choose a provider</option>
+          <option value="openai">OpenAI</option>
+          <option value="anthropic">Anthropic</option>
+          <option value="google">Google Gemini</option>
+          <option value="openrouter">OpenRouter</option>
+        </select>
+        <label for="model">Model name</label>
+        <input id="model" type="text" required maxlength="200" autocomplete="off" spellcheck="false" aria-describedby="model-help">
+        <p id="model-help" class="help">Enter the exact model ID from your provider. Choose a different model from the one answering your chat.</p>
+        <label for="api-key">API key</label>
+        <input id="api-key" type="password" maxlength="4096" autocomplete="off" spellcheck="false" aria-describedby="key-help key-status">
+        <p id="key-help" class="help">Leave blank to keep the saved key. Changing providers clears the old key unless you enter a replacement.</p>
+        <p id="key-status" class="help">No key saved.</p>
+        <button id="remove-key" type="button" class="secondary" disabled>Remove saved key</button>
+        <label for="history-count">Earlier messages to include</label>
+        <input id="history-count" type="number" min="0" max="20" step="1" required value="4" aria-describedby="history-help">
+        <p id="history-help" class="help">0–20 messages, in addition to the question and selected reply. Default: 4.</p>
+        <div class="actions">
+          <button id="save-settings" type="submit">Save settings</button>
+          <button type="button" class="secondary" disabled aria-describedby="connection-help">Test connection</button>
+        </div>
+        <p id="connection-help" class="help">Connection testing isn’t available yet.</p>
+      </fieldset>
+    </form>
+    <p id="settings-status" role="status" aria-live="polite">Loading settings…</p>
+    <p class="privacy">Settings stay in this Chrome profile. Your key is stored locally, not synced, and isn’t encrypted by this extension. Saving settings sends nothing to a provider.</p>
+  </main>
+</body>
+</html>
